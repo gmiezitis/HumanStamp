@@ -102,6 +102,24 @@ export default async function VerifyPage({ params }: PageProps) {
           <div>
             <strong>SHA-256:</strong> {truncateHash(stamp.sha256, 16)}
           </div>
+          {stamp.fingerprint && (
+            <div>
+              <strong>Fingerprint:</strong>{' '}
+              <span style={{ 
+                background: '#e0f2fe', 
+                padding: '2px 8px', 
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontFamily: 'monospace'
+              }}>
+                {JSON.parse(stamp.fingerprint).length} frames (dHash)
+              </span>
+              {' '}
+              <span style={{ color: '#64748b', fontSize: '13px' }}>
+                — soft-bind for strip recovery
+              </span>
+            </div>
+          )}
           <div>
             <strong>Sealed At:</strong> {new Date(stamp.createdAt).toLocaleString()}
           </div>

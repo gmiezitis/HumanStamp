@@ -19,19 +19,21 @@ export interface StampReceipt {
   createdAt: string;
   signature: string;
   publicKey: string;
+  fingerprint?: string[];
 }
 
 export interface CreateStampInput {
   sha256: string;
   recipe: StampRecipe;
+  fingerprint?: string[];
 }
+
+export type VerifyMatchType = 'exact' | 'fingerprint' | 'none';
 
 export interface VerifyResult {
   valid: boolean;
   receipt: StampReceipt | null;
+  matchType?: VerifyMatchType;
+  similarity?: number;
   error?: string;
-}
-
-export interface SoftBinding {
-  pHash?: string;
 }

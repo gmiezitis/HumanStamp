@@ -109,12 +109,22 @@ console.log(keys);
 
 ## Scope Notes
 
-**Slice 0 (current)**:
+**Slice 0**:
 - Hard bind: SHA-256 only
-- No auth, payments, or NFC
+- Ed25519 signatures
+- Dual-trust UI (human approval vs tools)
 - Local SQLite for zero-config dev
 
-**Future** (out of scope for Slice 0):
-- Soft-binding / perceptual hash matching
+**Slice 1 (current)**:
+- Soft-bind: perceptual fingerprinting (dHash on ~8 frames)
+- Verify-by-upload: SHA-256 exact match or fingerprint recovery
+- Match type display: exact vs fingerprint with similarity score
+- Strip survival: works after platform re-encoding/metadata removal
+
+**Why dHash?** Difference hash computes horizontal gradient differences per frame, making it resilient to re-encoding, minor compression, and metadata stripping while remaining fast and deterministic.
+
+**Future** (out of scope for Slice 1):
 - C2PA CA certificates
 - Neural watermarks
+- Identity Claims Aggregation
+- Light stake / commitment

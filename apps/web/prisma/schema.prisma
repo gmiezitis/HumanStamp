@@ -10,6 +10,7 @@ generator client {
 model Stamp {
   id           String   @id
   sha256       String
+  fingerprint  String?
   recipeJson   String
   createdAtIso String
   mode         String
@@ -21,4 +22,5 @@ model Stamp {
   createdAt    DateTime @default(now())
 
   @@index([sha256])
+  @@index([fingerprint])
 }
