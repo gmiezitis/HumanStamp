@@ -83,14 +83,22 @@ async function extractFrameAt(videoPath: string, timestamp: number, outputPath: 
       '-ss', timestamp.toString(),
       '-i', videoPath,
       '-vframes', '1',
+      '-update', '1',
       '-q:v', '2',
       '-y',
       outputPath
-    ]);
+    ], {
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    let stderr = '';
+    ffmpeg.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
 
     ffmpeg.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(`ffmpeg exited with code ${code}`));
+        reject(new Error(`ffmpeg exited with code ${code}: ${stderr}`));
       } else {
         resolve();
       }
