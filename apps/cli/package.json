@@ -1,0 +1,24 @@
+{
+  "name": "@human-stamp/cli",
+  "version": "0.1.0",
+  "bin": {
+    "stamp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@human-stamp/core": "workspace:*",
+    "commander": "^11.1.0",
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/node-fetch": "^2.6.11",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
