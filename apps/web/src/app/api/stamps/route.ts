@@ -8,15 +8,15 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const recipeJson = formData.get('recipe') as string | null;
+    const recipeInput = formData.get('recipe') as string | null;
 
-    if (!recipeJson) {
+    if (!recipeInput) {
       return NextResponse.json({ error: 'Missing recipe' }, { status: 400 });
     }
 
     let recipe: StampRecipe;
     try {
-      recipe = JSON.parse(recipeJson);
+      recipe = JSON.parse(recipeInput);
     } catch {
       return NextResponse.json({ error: 'Invalid recipe JSON' }, { status: 400 });
     }
@@ -43,13 +43,16 @@ export async function POST(request: NextRequest) {
     const createdAt = new Date().toISOString();
 
     const { privateKey, publicKey } = await getSigningKeys();
-    const payload = createReceiptPayload(id, sha256, JSON.stringify(recipe), createdAt);
+    const recipeJson = JSON.stringify(recipe);
+    const payload = createReceiptPayload(id, sha256, recipeJson, createdAt);
     const signature = await sign(payload, privateKey);
 
     await prisma.stamp.create({
       data: {
         id,
         sha256,
+        recipeJson,
+        createdAtIso: createdAt,
         mode: recipe.mode,
         tools: JSON.stringify(recipe.tools || []),
         agentRoles: recipe.agentRoles ? JSON.stringify(recipe.agentRoles) : null,

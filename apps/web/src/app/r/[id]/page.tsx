@@ -15,18 +15,13 @@ export default async function VerifyPage({ params }: PageProps) {
     notFound();
   }
 
-  const recipe = {
-    mode: stamp.mode,
-    tools: JSON.parse(stamp.tools),
-    agentRoles: stamp.agentRoles ? JSON.parse(stamp.agentRoles) : undefined,
-    approver: stamp.approver,
-  };
+  const recipe = JSON.parse(stamp.recipeJson);
 
   const payload = createReceiptPayload(
     stamp.id,
     stamp.sha256,
-    JSON.stringify(recipe),
-    stamp.createdAt.toISOString()
+    stamp.recipeJson,
+    stamp.createdAtIso
   );
 
   const isValid = await verify(payload, stamp.signature, stamp.publicKey);

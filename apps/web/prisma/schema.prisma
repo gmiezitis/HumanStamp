@@ -8,15 +8,17 @@ generator client {
 }
 
 model Stamp {
-  id        String   @id
-  sha256    String
-  mode      String
-  tools     String
-  agentRoles String?
-  approver  String
-  signature String
-  publicKey String
-  createdAt DateTime @default(now())
+  id           String   @id
+  sha256       String
+  recipeJson   String
+  createdAtIso String
+  mode         String
+  tools        String
+  agentRoles   String?
+  approver     String
+  signature    String
+  publicKey    String
+  createdAt    DateTime @default(now())
 
   @@index([sha256])
 }
