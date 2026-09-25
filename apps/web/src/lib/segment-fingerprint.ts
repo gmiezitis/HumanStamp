@@ -99,8 +99,16 @@ export async function generateSegmentFingerprint(
 }
 
 function hammingDistance(hash1: string, hash2: string): number {
-  const a = BigInt('0x' + hash1);
-  const b = BigInt('0x' + hash2);
+  // Validate and clean hex strings
+  const cleanHash1 = hash1.replace(/[^0-9a-fA-F]/g, '');
+  const cleanHash2 = hash2.replace(/[^0-9a-fA-F]/g, '');
+  
+  if (cleanHash1.length === 0 || cleanHash2.length === 0) {
+    return 0;
+  }
+  
+  const a = BigInt('0x' + cleanHash1);
+  const b = BigInt('0x' + cleanHash2);
   const xor = a ^ b;
   
   let distance = 0;
