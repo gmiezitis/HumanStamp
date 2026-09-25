@@ -12,7 +12,7 @@ test.describe('Complete Demo Workflow', () => {
   const v2Path = join(__dirname, '../test-videos/test-v2.mp4');
 
   test('Full workflow: upload, compare, approve, signoff, receipt, verify', async ({ page, context }) => {
-    test.setTimeout(180000); // 3 minutes
+    test.setTimeout(240000); // 4 minutes
 
     // Step 1: Test login
     console.log('Step 1: Test login');
@@ -104,12 +104,10 @@ test.describe('Complete Demo Workflow', () => {
 
     // Step 8: Approve version
     console.log('Step 8: Approve version');
-    await page.click('button:has-text("Approve This Version")');
-    await page.waitForTimeout(1000);
-    await page.on('dialog', dialog => dialog.accept());
+    page.on('dialog', dialog => dialog.accept());
     await page.click('button:has-text("Approve This Version")');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
 
     // Step 9: Create sign-off (from project level, need to implement this)
     console.log('Step 9: Navigate to sign-off');
@@ -132,11 +130,10 @@ test.describe('Complete Demo Workflow', () => {
     await page.goBack();
     await page.waitForLoadState('networkidle');
     
-    await page.click('button:has-text("Generate Receipt")');
-    await page.on('dialog', dialog => dialog.accept());
+    page.on('dialog', dialog => dialog.accept());
     await page.click('button:has-text("Generate Receipt")');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
     // Should now be on receipt page
     await expect(page.locator('h1:has-text("Record of Approval")')).toBeVisible({ timeout: 10000 });

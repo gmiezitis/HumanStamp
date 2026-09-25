@@ -7,6 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: 'list',
+  globalSetup: require.resolve('./e2e/globalSetup.ts'),
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -18,5 +19,5 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: undefined, // App already running in tmux
+  webServer: undefined, // App already running
 });
