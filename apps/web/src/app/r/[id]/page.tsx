@@ -25,12 +25,17 @@ export default async function ReceiptPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-stone-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <img
-            src={`/r/${id}/qr`}
-            alt="Receipt QR Card"
-            className="max-w-sm mx-auto shadow-lg rounded-lg"
-          />
+        <div className="mb-8 flex justify-center">
+          <div className="bg-white shadow-lg border-2 border-stone-300 rounded-lg p-6 inline-block">
+            <img
+              src={`/r/${id}/qr`}
+              alt="Receipt QR Card"
+              className="w-80 h-80 object-contain"
+            />
+            <p className="text-center text-xs text-stone-500 mt-3">
+              Scan to verify this record
+            </p>
+          </div>
         </div>
 
         <div className="bg-white shadow-sm border border-stone-200 rounded-lg p-8">
