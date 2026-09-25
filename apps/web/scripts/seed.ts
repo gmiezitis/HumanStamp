@@ -190,13 +190,24 @@ async function main() {
   });
 
   console.log('Creating client sign-off...');
-  await prisma.clientSignOff.create({
+  const signOff = await prisma.clientSignOff.create({
     data: {
       projectId: project.id,
       versionId: version2.id,
       token: 'demo-signoff-token-123',
       email: 'client@euronics.test',
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+  
+  console.log('Completing sign-off as client...');
+  await prisma.clientSignOff.update({
+    where: { id: signOff.id },
+    data: {
+      usedAt: new Date(),
+      decision: 'approved',
+      signerName: 'Emma Wilson',
+      comment: 'Looks great!',
     },
   });
 

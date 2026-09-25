@@ -28,16 +28,22 @@ test('approve, signoff, label, and receipt workflow', async ({ page, context }) 
   
   await page.waitForURL(/\/dashboard\/clients\/[^/]+/, { timeout: 10000 });
   
-  console.log('Step 3: Navigate to existing project');
-  const projectLink = page.locator('a:has-text("Autumn Campaign")').first();
-  await expect(projectLink).toBeVisible();
-  await projectLink.click();
+  console.log('Step 3: Create fresh E2E project');
+  const newProjectLink = page.locator('a:has-text("New Project")').first();
+  await expect(newProjectLink).toBeVisible();
+  await newProjectLink.click();
+  
+  await page.waitForURL(/\/projects\/new/, { timeout: 5000 });
+  
+  const timestamp = Date.now();
+  const projectName = `E2E Run ${timestamp}`;
+  await page.fill('input[placeholder*="project name"], input[name="name"]', projectName);
+  await page.click('button:has-text("Create Project")');
   
   await page.waitForURL(/\/dashboard\/projects\/[^/]+/, { timeout: 10000 });
-  
   const projectUrl = page.url();
   const projectId = projectUrl.match(/\/projects\/([^/]+)/)?.[1];
-  console.log(`Using project: Autumn Campaign (${projectId})`);
+  console.log(`Created project: ${projectName} (${projectId})`);
 
   console.log('Step 4: Upload test video');
   const fileInput = page.locator('input[type="file"]');
