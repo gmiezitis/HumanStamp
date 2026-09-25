@@ -3,6 +3,7 @@ import { requireSession, requireWorkspaceAccess } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { appendEvent } from '@/lib/event-log';
 import { getStorage, generateStorageKey } from '@/lib/storage';
+import { enqueueProcessVideo } from '@/lib/queue';
 import { createHash } from 'crypto';
 
 export async function GET(
@@ -124,6 +125,11 @@ export async function POST(
       { versionNumber, filename: file.name, aiClaim },
       session.userId
     );
+
+    await enqueueProcessVideo({
+      versionId: version.id,
+      workspaceId: project.client.workspaceId,
+    });
 
     return NextResponse.json({ version });
   } catch (error) {

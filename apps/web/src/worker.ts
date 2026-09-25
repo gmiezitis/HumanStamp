@@ -3,6 +3,8 @@
 import { getQueue } from './lib/queue';
 import { prisma } from './lib/prisma';
 import { getStorage } from './lib/storage';
+import { scanVideo, detectMismatch } from './lib/video-scan';
+import { generateSegmentFingerprint } from './lib/segment-fingerprint';
 import type { ProcessVideoJob, GenerateFingerprintJob, BurnLabelJob } from './lib/queue';
 
 async function processVideo(job: ProcessVideoJob): Promise<void> {
@@ -14,6 +16,31 @@ async function processVideo(job: ProcessVideoJob): Promise<void> {
 
   if (!version) {
     throw new Error(`Version ${job.versionId} not found`);
+  }
+
+  const storage = getStorage();
+  const buffer = await storage.get(version.storageKey);
+
+  const [scanResult, segmentFp] = await Promise.all([
+    scanVideo(buffer),
+    generateSegmentFingerprint(buffer),
+  ]);
+
+  const mismatch = detectMismatch(version.aiClaim, scanResult);
+
+  await prisma.version.update({
+    where: { id: version.id },
+    data: {
+      c2paPresent: scanResult.c2pa.found,
+      c2paData: scanResult.c2pa.found ? JSON.stringify(scanResult.c2pa) : null,
+      ffprobeData: JSON.stringify(scanResult.ffprobe),
+      duration: scanResult.ffprobe.duration || version.duration,
+      fingerprint: JSON.stringify(segmentFp),
+    },
+  });
+
+  if (mismatch.hasMismatch) {
+    console.warn(`Mismatch detected for version ${job.versionId}: ${mismatch.reason}`);
   }
 
   console.log(`Video processing complete for version ${job.versionId}`);
@@ -38,13 +65,67 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
 
   const version = await prisma.version.findUnique({
     where: { id: job.versionId },
+    include: {
+      project: true,
+    },
   });
 
   if (!version) {
     throw new Error(`Version ${job.versionId} not found`);
   }
 
-  console.log(`Label burn complete for version ${job.versionId}`);
+  const storage = getStorage();
+  const inputBuffer = await storage.get(version.storageKey);
+
+  const { burnLabel: burnLabelFn } = await import('./lib/label-burner');
+  const outputBuffer = await burnLabelFn(inputBuffer, {
+    labelType: job.labelType as any,
+    corner: job.corner as any,
+    durationSeconds: job.duration,
+  });
+
+  const { createHash } = await import('crypto');
+  const sha256 = createHash('sha256').update(outputBuffer).digest('hex');
+
+  const lastVersion = await prisma.version.findFirst({
+    where: { projectId: version.projectId },
+    orderBy: { versionNumber: 'desc' },
+  });
+
+  const newVersionNumber = (lastVersion?.versionNumber || 0) + 1;
+
+  const { generateStorageKey } = await import('./lib/storage');
+  const storageKey = generateStorageKey(
+    job.workspaceId,
+    version.projectId,
+    `${version.filename.replace(/\.mp4$/, '')}-labeled.mp4`
+  );
+
+  await storage.put(storageKey, outputBuffer, 'video/mp4');
+
+  const newVersion = await prisma.version.create({
+    data: {
+      projectId: version.projectId,
+      versionNumber: newVersionNumber,
+      sha256,
+      storageKey,
+      filename: `${version.filename.replace(/\.mp4$/, '')}-labeled.mp4`,
+      fileSize: outputBuffer.length,
+      aiClaim: version.aiClaim,
+      c2paPresent: false,
+    },
+  });
+
+  const { appendEvent } = await import('./lib/event-log');
+  await appendEvent(
+    job.workspaceId,
+    'label.applied',
+    'version',
+    newVersion.id,
+    { labelType: job.labelType, corner: job.corner, originalVersionId: job.versionId }
+  );
+
+  console.log(`Label burn complete for version ${job.versionId}, created version ${newVersion.id}`);
 }
 
 async function main() {
