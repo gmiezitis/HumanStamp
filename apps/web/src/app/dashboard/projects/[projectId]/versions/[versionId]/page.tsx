@@ -128,7 +128,7 @@ export default async function VersionDetailPage({
         {/* Actions */}
         <section className="bg-white border border-stone-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-stone-900 mb-4">Actions</h2>
-          <VersionActions versionId={versionId} />
+          <VersionActions versionId={versionId} projectId={projectId} />
         </section>
       </main>
     </div>
