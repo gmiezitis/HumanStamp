@@ -11,6 +11,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: humanstamp
+          POSTGRES_PASSWORD: humanstamp_test
+          POSTGRES_DB: humanstamp_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: postgresql://humanstamp:humanstamp_test@localhost:5432/humanstamp_test
+      JWT_SECRET: test-secret-key-for-ci-only-12345678901234567890
+      STORAGE_TYPE: local
+      STORAGE_LOCAL_PATH: ./test-storage
+
     steps:
       - uses: actions/checkout@v4
 
@@ -25,6 +46,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: cd apps/web && pnpm prisma:generate
+
+      - name: Push Prisma schema to test database
+        run: cd apps/web && pnpm prisma:push
 
       - name: Run typecheck, tests, lint, and build
         run: pnpm verify
