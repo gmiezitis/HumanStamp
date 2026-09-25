@@ -40,17 +40,17 @@ export interface BurnLabelJob {
   duration: number;
 }
 
-export async function enqueueProcessVideo(data: ProcessVideoJob): Promise<string> {
+export async function enqueueProcessVideo(data: ProcessVideoJob): Promise<string | null> {
   const queue = await getQueue();
   return await queue.send('process-video', data);
 }
 
-export async function enqueueGenerateFingerprint(data: GenerateFingerprintJob): Promise<string> {
+export async function enqueueGenerateFingerprint(data: GenerateFingerprintJob): Promise<string | null> {
   const queue = await getQueue();
   return await queue.send('generate-fingerprint', data);
 }
 
-export async function enqueueBurnLabel(data: BurnLabelJob): Promise<string> {
+export async function enqueueBurnLabel(data: BurnLabelJob): Promise<string | null> {
   const queue = await getQueue();
   return await queue.send('burn-label', data);
 }
