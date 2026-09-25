@@ -161,7 +161,7 @@ export default async function ReceiptPage({ params }: PageProps) {
             <p className="text-xs text-amber-800">
               This record documents approvals and disclosures. It is not legal advice or a 
               certification of compliance. The signature verifies the integrity of this record 
-              only—not the truth or authenticity of the media content.
+              only&mdash;not the truth or authenticity of the media content.
             </p>
           </div>
         </div>
