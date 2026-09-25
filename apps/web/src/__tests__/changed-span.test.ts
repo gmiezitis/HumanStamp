@@ -18,8 +18,8 @@ describe('Changed Span Detection', () => {
     const fp2: VideoFingerprint = {
       segments: [
         { timestamp: 0, hash: 'aaaaaaaaaaaaaaaa' },
-        { timestamp: 1, hash: 'xxxxxxxxxxxxxxxx' },
-        { timestamp: 2, hash: 'yyyyyyyyyyyyyyyy' },
+        { timestamp: 1, hash: '1111111111111111' },
+        { timestamp: 2, hash: '2222222222222222' },
         { timestamp: 3, hash: 'dddddddddddddddd' },
       ],
       fps: 30,

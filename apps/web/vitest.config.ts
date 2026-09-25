@@ -13,6 +13,7 @@ export default defineConfig({
       },
     },
     fileParallelism: false,
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/.next/**'],
   },
   resolve: {
     alias: {
