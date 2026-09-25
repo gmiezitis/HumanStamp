@@ -30,33 +30,34 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
   const chunks: Buffer[] = [];
   doc.on('data', (chunk) => chunks.push(chunk));
 
-  doc.fontSize(24).font('Helvetica-Bold').text('Human Stamp', { align: 'center' });
+  // Use Times-Roman (standard PDF font, no external files needed)
+  doc.fontSize(24).text('Human Stamp', { align: 'center' });
   doc.moveDown(0.3);
-  doc.fontSize(18).font('Helvetica-Bold').text('Record of Approval and Disclosure', { align: 'center' });
+  doc.fontSize(18).text('Record of Approval and Disclosure', { align: 'center' });
   doc.moveDown(1);
 
-  doc.fontSize(10).font('Helvetica').text(`Receipt ID: ${receiptId}`, { align: 'center' });
+  doc.fontSize(10).text(`Receipt ID: ${receiptId}`, { align: 'center' });
   doc.moveDown(1.5);
 
-  doc.fontSize(12).font('Helvetica-Bold').text('PROJECT', { underline: true });
+  doc.fontSize(12).text('PROJECT', { underline: true });
   doc.moveDown(0.3);
-  doc.fontSize(11).font('Helvetica').text(`Client: ${payload.project.client.name}`);
+  doc.fontSize(11).text(`Client: ${payload.project.client.name}`);
   doc.text(`Project: ${payload.project.name}`);
   doc.moveDown(1);
 
-  doc.fontSize(12).font('Helvetica-Bold').text('VERSION', { underline: true });
+  doc.fontSize(12).text('VERSION', { underline: true });
   doc.moveDown(0.3);
-  doc.fontSize(11).font('Helvetica').text(`Version: v${payload.versionNumber}`);
+  doc.fontSize(11).text(`Version: v${payload.versionNumber}`);
   doc.text(`Filename: ${payload.filename}`);
   doc.text(`AI Claim: ${payload.aiClaim}`);
   doc.text(`C2PA Present: ${payload.c2paPresent ? 'Yes' : 'No'}`);
   doc.moveDown(1);
 
   if (payload.approvals.length > 0) {
-    doc.fontSize(12).font('Helvetica-Bold').text('INTERNAL APPROVALS', { underline: true });
+    doc.fontSize(12).text('INTERNAL APPROVALS', { underline: true });
     doc.moveDown(0.3);
     for (const approval of payload.approvals) {
-      doc.fontSize(10).font('Helvetica').text(
+      doc.fontSize(10).text(
         `• ${approval.approverName ? `${approval.approverName}, ` : ''}${approval.approverRole} at ${approval.company}`,
       );
       doc.fontSize(9).text(`  ${new Date(approval.createdAt).toLocaleString()}`, { indent: 10 });
@@ -65,10 +66,10 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
   }
 
   if (payload.clientSignOffs.length > 0) {
-    doc.fontSize(12).font('Helvetica-Bold').text('CLIENT SIGN-OFFS', { underline: true });
+    doc.fontSize(12).text('CLIENT SIGN-OFFS', { underline: true });
     doc.moveDown(0.3);
     for (const signoff of payload.clientSignOffs) {
-      doc.fontSize(10).font('Helvetica').text(
+      doc.fontSize(10).text(
         `• ${signoff.signerName} (${signoff.email}) — ${signoff.decision}`,
       );
       doc.fontSize(9).text(`  ${new Date(signoff.createdAt).toLocaleString()}`, { indent: 10 });
@@ -76,24 +77,24 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
     doc.moveDown(1);
   }
 
-  doc.fontSize(12).font('Helvetica-Bold').text('FILE HASH', { underline: true });
+  doc.fontSize(12).text('FILE HASH', { underline: true });
   doc.moveDown(0.3);
-  doc.fontSize(8).font('Courier').text(payload.sha256);
+  doc.fontSize(8).text(payload.sha256);
   doc.moveDown(1);
 
   if (payload.eventChainHead) {
-    doc.fontSize(12).font('Helvetica-Bold').text('EVENT CHAIN HEAD', { underline: true });
+    doc.fontSize(12).text('EVENT CHAIN HEAD', { underline: true });
     doc.moveDown(0.3);
-    doc.fontSize(8).font('Courier').text(payload.eventChainHead);
+    doc.fontSize(8).text(payload.eventChainHead);
     doc.moveDown(1);
   }
 
-  doc.fontSize(12).font('Helvetica-Bold').text('CREATED', { underline: true });
+  doc.fontSize(12).text('CREATED', { underline: true });
   doc.moveDown(0.3);
-  doc.fontSize(10).font('Helvetica').text(new Date(payload.createdAt).toLocaleString());
+  doc.fontSize(10).text(new Date(payload.createdAt).toLocaleString());
   doc.moveDown(2);
 
-  doc.fontSize(8).font('Helvetica-Oblique').fillColor('#666').text(
+  doc.fontSize(8).fillColor('#666').text(
     'Legal Disclaimer: This record documents approvals and disclosures. It is not legal advice or a certification of compliance. ' +
     'The signature verifies the integrity of this record only—not the truth or authenticity of the media content.',
     { align: 'justify' }
