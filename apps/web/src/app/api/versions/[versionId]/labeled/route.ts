@@ -60,7 +60,7 @@ export async function GET(
     const storage = getStorage();
     const buffer = await storage.get(labeledVersion.storageKey);
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         'Content-Type': 'video/mp4',
         'Content-Disposition': `attachment; filename="${labeledVersion.filename}"`,
