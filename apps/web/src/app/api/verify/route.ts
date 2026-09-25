@@ -20,6 +20,11 @@ export async function POST(req: NextRequest) {
       include: {
         receipts: true,
         approvals: true,
+        project: {
+          include: {
+            client: true,
+          },
+        },
       },
     });
 
@@ -45,6 +50,11 @@ export async function POST(req: NextRequest) {
           include: {
             receipts: true,
             approvals: true,
+            project: {
+              include: {
+                client: true,
+              },
+            },
           },
         });
 
@@ -81,6 +91,10 @@ export async function POST(req: NextRequest) {
         versionId: version.id,
         versionNumber: version.versionNumber,
       } : null,
+      project: {
+        name: version.project.name,
+        client: version.project.client.name,
+      },
       matchType,
       similarity,
       changedSpans,

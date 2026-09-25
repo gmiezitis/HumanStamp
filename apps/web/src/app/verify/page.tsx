@@ -95,6 +95,18 @@ export default function VerifyPage() {
                   <p className="text-sm text-green-800">
                     This file exactly matches a recorded version.
                   </p>
+                  {result.project && (
+                    <div className="mt-3 space-y-1">
+                      <p className="text-sm text-green-900">
+                        <span className="font-semibold">Project:</span> {result.project.client} — {result.project.name}
+                      </p>
+                      {result.receipt && (
+                        <p className="text-sm text-green-900">
+                          <span className="font-semibold">Version:</span> v{result.receipt.versionNumber}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -109,6 +121,18 @@ export default function VerifyPage() {
                   <p className="text-sm text-blue-800 mb-2">
                     This file matches a recorded version, but has been re-encoded or edited.
                   </p>
+                  {result.project && (
+                    <div className="mt-3 space-y-1">
+                      <p className="text-sm text-blue-900">
+                        <span className="font-semibold">Project:</span> {result.project.client} — {result.project.name}
+                      </p>
+                      {result.receipt && (
+                        <p className="text-sm text-blue-900">
+                          <span className="font-semibold">Version:</span> v{result.receipt.versionNumber}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   {result.changedSpans && result.changedSpans.length > 0 && (
                     <div className="mt-3">
                       <p className="text-xs font-semibold text-blue-900 mb-1">
