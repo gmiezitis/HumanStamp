@@ -34,7 +34,7 @@ export interface VideoScanResult {
 
 export async function scanC2PA(buffer: Buffer): Promise<C2PACredentials> {
   try {
-    const c2pa = createC2pa();
+    const c2paInstance = (c2pa as any).createC2pa ? (c2pa as any).createC2pa() : null;
     
     const tmpPath = join(tmpdir(), `scan-${Date.now()}.mp4`);
     writeFileSync(tmpPath, buffer);
