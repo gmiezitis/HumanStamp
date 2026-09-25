@@ -40,7 +40,7 @@ export async function scanC2PA(buffer: Buffer): Promise<C2PACredentials> {
     writeFileSync(tmpPath, buffer);
 
     try {
-      const manifest = await c2pa.read(tmpPath);
+      const manifest = await c2paInstance?.read(tmpPath);
       
       if (!manifest || !manifest.active_manifest) {
         return { found: false };
