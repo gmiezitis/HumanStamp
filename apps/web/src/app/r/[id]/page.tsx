@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import { getReceipt } from '@/lib/receipt';
 import { notFound } from 'next/navigation';
 import { verify } from '@human-stamp/core';
