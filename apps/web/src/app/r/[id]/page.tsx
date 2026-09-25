@@ -46,7 +46,6 @@ export default async function ReceiptPage({ params }: PageProps) {
             <div className="text-sm text-stone-600 space-y-1">
               <p><strong>Project:</strong> {payload.project.name}</p>
               <p><strong>Client:</strong> {payload.project.client.name}</p>
-              <p><strong>Agency:</strong> {payload.project.client.workspace.name}</p>
             </div>
           </div>
 

@@ -54,14 +54,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ fontSize: '14px', color: '#78716c' }}>Project</div>
               <div style={{ fontSize: '18px', color: '#1c1917' }}>
-                {payload.project.client.name} — {payload.project.name}
+                {`${payload.project.client.name} — ${payload.project.name}`}
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ fontSize: '14px', color: '#78716c' }}>Version</div>
               <div style={{ fontSize: '18px', color: '#1c1917' }}>
-                v{payload.versionNumber} • {payload.filename}
+                {`v${payload.versionNumber} • ${payload.filename}`}
               </div>
             </div>
 
@@ -74,7 +74,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ fontSize: '14px', color: '#78716c' }}>Approved by</div>
                 <div style={{ fontSize: '16px', color: '#1c1917' }}>
-                  {payload.approvals[0].approverRole} at {payload.approvals[0].company}
+                  {`${payload.approvals[0].approverRole} at ${payload.approvals[0].company}`}
                 </div>
               </div>
             )}
@@ -100,11 +100,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 color: '#a8a29e',
                 textAlign: 'center',
                 marginTop: '20px',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              This record documents approvals and disclosures.
-              <br />
-              It is not legal advice or a certification of compliance.
+              <div>This record documents approvals and disclosures.</div>
+              <div>It is not legal advice or a certification of compliance.</div>
             </div>
           </div>
         </div>
