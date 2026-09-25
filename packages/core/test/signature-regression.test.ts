@@ -41,10 +41,10 @@ describe('Signature verification regression', () => {
     const createdAt = '2026-09-23T13:00:00.000Z';
     const recipeJson = JSON.stringify(recipe);
     
-    const payload = createReceiptPayload(id, sha256, recipeJson, createdAt);
+    const payload = createReceiptPayload(id, sha256, recipeJson, createdAt, undefined);
     const signature = await sign(payload, keypair.privateKey);
     
-    const verifyPayload = createReceiptPayload(id, sha256, recipeJson, createdAt);
+    const verifyPayload = createReceiptPayload(id, sha256, recipeJson, createdAt, undefined);
     const isValid = await verify(verifyPayload, signature, keypair.publicKey);
     
     expect(isValid).toBe(true);
@@ -70,10 +70,10 @@ describe('Signature verification regression', () => {
     const id = 'test-stamp-id-3';
     const createdAt = '2026-09-23T13:00:00.000Z';
     
-    const payload1 = createReceiptPayload(id, sha256, JSON.stringify(recipe1), createdAt);
+    const payload1 = createReceiptPayload(id, sha256, JSON.stringify(recipe1), createdAt, undefined);
     const signature = await sign(payload1, keypair.privateKey);
     
-    const payload2 = createReceiptPayload(id, sha256, JSON.stringify(recipe2), createdAt);
+    const payload2 = createReceiptPayload(id, sha256, JSON.stringify(recipe2), createdAt, undefined);
     const isValid = await verify(payload2, signature, keypair.publicKey);
     
     expect(isValid).toBe(false);

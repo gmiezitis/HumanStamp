@@ -12,6 +12,7 @@ import {
   VerifyMatchType 
 } from '@human-stamp/core';
 import { prisma } from '@/lib/prisma';
+import { getKnownPublicKeys } from '@/lib/keys';
 
 /**
  * POST /api/verify
@@ -43,8 +44,15 @@ export async function POST(request: NextRequest) {
     if (stamp) {
       // Exact match found
       const recipe = JSON.parse(stamp.recipeJson);
-      const payload = createReceiptPayload(stamp.id, stamp.sha256, stamp.recipeJson, stamp.createdAtIso);
-      const signatureValid = await verify(payload, stamp.signature, stamp.publicKey);
+      const storedFingerprint = stamp.fingerprint ? JSON.parse(stamp.fingerprint) : undefined;
+      const payload = createReceiptPayload(stamp.id, stamp.sha256, stamp.recipeJson, stamp.createdAtIso, storedFingerprint);
+      
+      // Verify using server's known public keys (not the key stored with stamp)
+      const knownKeys = await getKnownPublicKeys();
+      const matchingKey = knownKeys.find(k => k.keyId === stamp.keyId);
+      const signatureValid = matchingKey 
+        ? await verify(payload, stamp.signature, matchingKey.publicKey)
+        : false;
 
       return NextResponse.json({
         found: true,
@@ -102,7 +110,8 @@ export async function POST(request: NextRequest) {
     });
 
     const SIMILARITY_THRESHOLD = 0.85;
-    let bestMatch: typeof stamp | null = null;
+    type StampType = Awaited<ReturnType<typeof prisma.stamp.findFirst>>;
+    let bestMatch: StampType = null;
     let bestSimilarity = 0;
 
     for (const candidate of stampsWithFingerprints) {
@@ -119,8 +128,15 @@ export async function POST(request: NextRequest) {
 
     if (bestMatch) {
       const recipe = JSON.parse(bestMatch.recipeJson);
-      const payload = createReceiptPayload(bestMatch.id, bestMatch.sha256, bestMatch.recipeJson, bestMatch.createdAtIso);
-      const signatureValid = await verify(payload, bestMatch.signature, bestMatch.publicKey);
+      const storedFingerprint = bestMatch.fingerprint ? JSON.parse(bestMatch.fingerprint) : undefined;
+      const payload = createReceiptPayload(bestMatch.id, bestMatch.sha256, bestMatch.recipeJson, bestMatch.createdAtIso, storedFingerprint);
+      
+      // Verify using server's known public keys (not the key stored with stamp)
+      const knownKeys = await getKnownPublicKeys();
+      const matchingKey = knownKeys.find(k => k.keyId === bestMatch.keyId);
+      const signatureValid = matchingKey 
+        ? await verify(payload, bestMatch.signature, matchingKey.publicKey)
+        : false;
 
       return NextResponse.json({
         found: true,

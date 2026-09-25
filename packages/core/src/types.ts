@@ -20,6 +20,8 @@ export interface StampReceipt {
   signature: string;
   publicKey: string;
   fingerprint?: string[];
+  keyId?: string;
+  payloadVersion?: number;
 }
 
 export interface CreateStampInput {

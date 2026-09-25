@@ -46,6 +46,28 @@ export async function verify(
   }
 }
 
-export function createReceiptPayload(id: string, sha256: string, recipeJson: string, createdAt: string): string {
-  return JSON.stringify({ id, sha256, recipe: JSON.parse(recipeJson), createdAt });
+/**
+ * Create canonical receipt payload for signing
+ * Version 1: includes id, sha256, recipe, createdAt, and fingerprint
+ * 
+ * CRITICAL: This payload must be deterministic and versioned.
+ * Any change to the structure requires a new version number.
+ */
+export function createReceiptPayload(
+  id: string, 
+  sha256: string, 
+  recipeJson: string, 
+  createdAt: string,
+  fingerprint?: string[]
+): string {
+  const payload = {
+    v: 1, // payload version
+    id,
+    sha256,
+    recipe: JSON.parse(recipeJson),
+    createdAt,
+    fingerprint: fingerprint || null,
+  };
+  // Use JSON.stringify with deterministic key ordering
+  return JSON.stringify(payload, Object.keys(payload).sort());
 }

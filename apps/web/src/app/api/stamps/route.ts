@@ -69,9 +69,9 @@ export async function POST(request: NextRequest) {
     const id = nanoid(12);
     const createdAt = new Date().toISOString();
 
-    const { privateKey, publicKey } = await getSigningKeys();
+    const { privateKey, publicKey, keyId } = await getSigningKeys();
     const recipeJson = JSON.stringify(recipe);
-    const payload = createReceiptPayload(id, sha256, recipeJson, createdAt);
+    const payload = createReceiptPayload(id, sha256, recipeJson, createdAt, fingerprint || undefined);
     const signature = await sign(payload, privateKey);
 
     await prisma.stamp.create({
@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
         approver: recipe.approver,
         signature,
         publicKey,
+        keyId,
       },
     });
 
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
       createdAt,
       signature,
       publicKey,
+      keyId,
       fingerprint,
     });
   } catch (error) {

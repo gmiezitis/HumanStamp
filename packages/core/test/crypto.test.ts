@@ -45,10 +45,11 @@ describe('Ed25519 signing', () => {
     const recipe = JSON.stringify({ mode: 'human', tools: [], approver: 'Alice' });
     const createdAt = '2026-01-01T00:00:00.000Z';
     
-    const payload = createReceiptPayload(id, sha256, recipe, createdAt);
+    const payload = createReceiptPayload(id, sha256, recipe, createdAt, undefined);
     
     expect(payload).toContain(id);
     expect(payload).toContain(sha256);
     expect(payload).toContain('human');
+    expect(payload).toContain('"v":1'); // Check for version
   });
 });

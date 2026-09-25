@@ -4,6 +4,10 @@ import { createWriteStream, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
+// Bundled ffmpeg binaries
+const ffmpegPath = process.env.FFMPEG_PATH || require('ffmpeg-static');
+const ffprobePath = process.env.FFPROBE_PATH || require('ffprobe-static').path;
+
 /**
  * Extract ~6-8 frames from video at evenly spaced intervals
  * Returns paths to extracted frame images
@@ -49,7 +53,7 @@ export async function extractFrames(videoPath: string, frameCount: number = 8): 
  */
 async function getVideoDuration(videoPath: string): Promise<number> {
   return new Promise((resolve, reject) => {
-    const ffprobe = spawn('ffprobe', [
+    const ffprobe = spawn(ffprobePath, [
       '-v', 'error',
       '-show_entries', 'format=duration',
       '-of', 'default=noprint_wrappers=1:nokey=1',
@@ -79,7 +83,7 @@ async function getVideoDuration(videoPath: string): Promise<number> {
  */
 async function extractFrameAt(videoPath: string, timestamp: number, outputPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const ffmpeg = spawn('ffmpeg', [
+    const ffmpeg = spawn(ffmpegPath, [
       '-ss', timestamp.toString(),
       '-i', videoPath,
       '-vframes', '1',
@@ -154,7 +158,7 @@ async function computeDHashWithSharp(imagePath: string, sharp: any): Promise<str
  */
 async function computeDHashBasic(imagePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const ffmpeg = spawn('ffmpeg', [
+    const ffmpeg = spawn(ffmpegPath, [
       '-i', imagePath,
       '-vf', 'scale=9:8,format=gray',
       '-f', 'rawvideo',

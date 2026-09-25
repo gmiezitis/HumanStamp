@@ -19,6 +19,7 @@ model Stamp {
   approver     String
   signature    String
   publicKey    String
+  keyId        String?
   createdAt    DateTime @default(now())
 
   @@index([sha256])

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { verify, createReceiptPayload, truncateHash } from '@human-stamp/core';
+import { getKnownPublicKeys } from '@/lib/keys';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
@@ -16,15 +17,22 @@ export default async function VerifyPage({ params }: PageProps) {
   }
 
   const recipe = JSON.parse(stamp.recipeJson);
+  const storedFingerprint = stamp.fingerprint ? JSON.parse(stamp.fingerprint) : undefined;
 
   const payload = createReceiptPayload(
     stamp.id,
     stamp.sha256,
     stamp.recipeJson,
-    stamp.createdAtIso
+    stamp.createdAtIso,
+    storedFingerprint
   );
 
-  const isValid = await verify(payload, stamp.signature, stamp.publicKey);
+  // Verify using server's known public keys (not the key stored with stamp)
+  const knownKeys = await getKnownPublicKeys();
+  const matchingKey = knownKeys.find(k => k.keyId === stamp.keyId);
+  const isValid = matchingKey 
+    ? await verify(payload, stamp.signature, matchingKey.publicKey)
+    : false;
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
