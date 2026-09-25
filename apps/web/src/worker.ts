@@ -1,0 +1,102 @@
+#!/usr/bin/env node
+
+import { getQueue } from './lib/queue';
+import { prisma } from './lib/prisma';
+import { getStorage } from './lib/storage';
+import type { ProcessVideoJob, GenerateFingerprintJob, BurnLabelJob } from './lib/queue';
+
+async function processVideo(job: ProcessVideoJob): Promise<void> {
+  console.log(`Processing video for version ${job.versionId}`);
+
+  const version = await prisma.version.findUnique({
+    where: { id: job.versionId },
+  });
+
+  if (!version) {
+    throw new Error(`Version ${job.versionId} not found`);
+  }
+
+  console.log(`Video processing complete for version ${job.versionId}`);
+}
+
+async function generateFingerprint(job: GenerateFingerprintJob): Promise<void> {
+  console.log(`Generating fingerprint for version ${job.versionId}`);
+
+  const version = await prisma.version.findUnique({
+    where: { id: job.versionId },
+  });
+
+  if (!version) {
+    throw new Error(`Version ${job.versionId} not found`);
+  }
+
+  console.log(`Fingerprint generation complete for version ${job.versionId}`);
+}
+
+async function burnLabel(job: BurnLabelJob): Promise<void> {
+  console.log(`Burning label for version ${job.versionId}`);
+
+  const version = await prisma.version.findUnique({
+    where: { id: job.versionId },
+  });
+
+  if (!version) {
+    throw new Error(`Version ${job.versionId} not found`);
+  }
+
+  console.log(`Label burn complete for version ${job.versionId}`);
+}
+
+async function main() {
+  console.log('Starting worker...');
+
+  const queue = await getQueue();
+
+  await queue.work<ProcessVideoJob>('process-video', async (job) => {
+    try {
+      await processVideo(job.data);
+    } catch (error) {
+      console.error('Error processing video:', error);
+      throw error;
+    }
+  });
+
+  await queue.work<GenerateFingerprintJob>('generate-fingerprint', async (job) => {
+    try {
+      await generateFingerprint(job.data);
+    } catch (error) {
+      console.error('Error generating fingerprint:', error);
+      throw error;
+    }
+  });
+
+  await queue.work<BurnLabelJob>('burn-label', async (job) => {
+    try {
+      await burnLabel(job.data);
+    } catch (error) {
+      console.error('Error burning label:', error);
+      throw error;
+    }
+  });
+
+  console.log('Worker ready');
+
+  process.on('SIGTERM', async () => {
+    console.log('Received SIGTERM, shutting down...');
+    await queue.stop();
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('Received SIGINT, shutting down...');
+    await queue.stop();
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+}
+
+main().catch((error) => {
+  console.error('Worker error:', error);
+  process.exit(1);
+});
