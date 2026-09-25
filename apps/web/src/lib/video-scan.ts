@@ -1,4 +1,4 @@
-// import * as c2pa from '@contentauth/c2pa-node';
+import { Reader } from '@contentauth/c2pa-node';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { writeFileSync, unlinkSync } from 'fs';
@@ -33,10 +33,49 @@ export interface VideoScanResult {
 }
 
 export async function scanC2PA(buffer: Buffer): Promise<C2PACredentials> {
-  // TODO: Re-enable C2PA scanning after fixing type issues with @contentauth/c2pa-node
-  // For now, return stub data to unblock CI
-  console.warn('C2PA scanning temporarily disabled due to type issues');
-  return { found: false };
+  try {
+    const tmpPath = join(tmpdir(), `c2pa-${Date.now()}.mp4`);
+    writeFileSync(tmpPath, buffer);
+
+    try {
+      const reader = await Reader.fromAsset({ path: tmpPath });
+      
+      if (!reader) {
+        return { found: false };
+      }
+
+      const manifestStore = reader.json();
+      const activeManifest = reader.getActive();
+
+      if (!activeManifest) {
+        return { found: false };
+      }
+
+      const claimGenerator = activeManifest.claim_generator;
+      const actions = activeManifest.assertions
+        ?.filter((a: any) => a['c2pa.actions'])
+        ?.flatMap((a: any) => a['c2pa.actions']?.actions || [])
+        ?.map((action: any) => action.action || action.softwareAgent || '')
+        .filter(Boolean);
+
+      return {
+        found: true,
+        generator: claimGenerator,
+        actions: actions || [],
+        claimGeneratorInfo: activeManifest.claim_generator_info,
+        raw: manifestStore,
+      };
+    } finally {
+      try {
+        unlinkSync(tmpPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  } catch (error) {
+    console.error('C2PA scan error:', error);
+    return { found: false };
+  }
 }
 
 export async function scanFFProbe(buffer: Buffer): Promise<FFProbeMetadata> {
