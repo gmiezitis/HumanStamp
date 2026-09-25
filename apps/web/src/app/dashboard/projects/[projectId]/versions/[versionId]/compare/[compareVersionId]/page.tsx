@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
+import { compareVersionFingerprints, type VideoFingerprint } from '@/lib/segment-fingerprint';
 
 export default async function CompareVersionsPage({ 
   params 
@@ -31,15 +32,10 @@ export default async function CompareVersionsPage({
   let comparisonData: any = null;
   if (version1.fingerprint && version2.fingerprint) {
     try {
-      const fp1 = JSON.parse(version1.fingerprint);
-      const fp2 = JSON.parse(version2.fingerprint);
+      const fp1: VideoFingerprint = JSON.parse(version1.fingerprint);
+      const fp2: VideoFingerprint = JSON.parse(version2.fingerprint);
       
-      // Calculate similarity locally (importing would require moving the function)
-      // For now, just show that they're different
-      comparisonData = {
-        changedSpans: [], // Would calculate from fingerprints
-        overallSimilarity: 0.85, // Placeholder
-      };
+      comparisonData = compareVersionFingerprints(fp1, fp2);
     } catch (e) {
       console.error('Error parsing fingerprints:', e);
     }

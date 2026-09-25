@@ -5,6 +5,8 @@ import { execSync } from 'child_process';
 import { writeFileSync, mkdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
+import { scanVideo, detectMismatch } from '../src/lib/video-scan';
+import { generateSegmentFingerprint } from '../src/lib/segment-fingerprint';
 
 const prisma = new PrismaClient();
 
@@ -114,6 +116,28 @@ async function main() {
     },
   });
 
+  console.log('Processing version 1 (scanning and fingerprinting)...');
+  const [scanResult1, segmentFp1] = await Promise.all([
+    scanVideo(v1Buffer),
+    generateSegmentFingerprint(v1Buffer),
+  ]);
+  const mismatch1 = detectMismatch(version1.aiClaim, scanResult1);
+
+  await prisma.version.update({
+    where: { id: version1.id },
+    data: {
+      c2paPresent: scanResult1.c2pa.found,
+      c2paData: scanResult1.c2pa.found ? JSON.stringify(scanResult1.c2pa) : null,
+      ffprobeData: JSON.stringify(scanResult1.ffprobe),
+      duration: scanResult1.ffprobe.duration || version1.duration,
+      fingerprint: JSON.stringify(segmentFp1),
+    },
+  });
+
+  if (mismatch1.hasMismatch) {
+    console.warn(`Mismatch detected for version 1: ${mismatch1.reason}`);
+  }
+
   const v2Buffer = await generateSampleVideo('v2.mp4', 5, 'Version 2 - Edited');
   const v2Hash = createHash('sha256').update(v2Buffer).digest('hex');
 
@@ -131,6 +155,28 @@ async function main() {
       c2paPresent: false,
     },
   });
+
+  console.log('Processing version 2 (scanning and fingerprinting)...');
+  const [scanResult2, segmentFp2] = await Promise.all([
+    scanVideo(v2Buffer),
+    generateSegmentFingerprint(v2Buffer),
+  ]);
+  const mismatch2 = detectMismatch(version2.aiClaim, scanResult2);
+
+  await prisma.version.update({
+    where: { id: version2.id },
+    data: {
+      c2paPresent: scanResult2.c2pa.found,
+      c2paData: scanResult2.c2pa.found ? JSON.stringify(scanResult2.c2pa) : null,
+      ffprobeData: JSON.stringify(scanResult2.ffprobe),
+      duration: scanResult2.ffprobe.duration || version2.duration,
+      fingerprint: JSON.stringify(segmentFp2),
+    },
+  });
+
+  if (mismatch2.hasMismatch) {
+    console.warn(`Mismatch detected for version 2: ${mismatch2.reason}`);
+  }
 
   console.log('Creating approval for version 2...');
   await prisma.approval.create({
