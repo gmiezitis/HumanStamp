@@ -12,6 +12,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
+    "verify": "pnpm build && pnpm test && pnpm lint",
     "clean": "pnpm -r clean && rm -rf node_modules"
   },
   "engines": {

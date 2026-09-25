@@ -47,6 +47,28 @@ export async function verify(
 }
 
 /**
+ * Deterministically serialize an object with sorted keys (recursive)
+ */
+function deterministicStringify(obj: any): string {
+  if (obj === null || obj === undefined) {
+    return JSON.stringify(obj);
+  }
+  if (typeof obj !== 'object') {
+    return JSON.stringify(obj);
+  }
+  if (Array.isArray(obj)) {
+    return '[' + obj.map(item => deterministicStringify(item)).join(',') + ']';
+  }
+  // Object: sort keys and recursively stringify
+  const sortedKeys = Object.keys(obj).sort();
+  const pairs = sortedKeys.map(key => {
+    const value = deterministicStringify(obj[key]);
+    return `"${key}":${value}`;
+  });
+  return '{' + pairs.join(',') + '}';
+}
+
+/**
  * Create canonical receipt payload for signing
  * Version 1: includes id, sha256, recipe, createdAt, and fingerprint
  * 
@@ -60,14 +82,17 @@ export function createReceiptPayload(
   createdAt: string,
   fingerprint?: string[]
 ): string {
+  const recipe = JSON.parse(recipeJson);
+  
   const payload = {
     v: 1, // payload version
     id,
     sha256,
-    recipe: JSON.parse(recipeJson),
+    recipe,
     createdAt,
     fingerprint: fingerprint || null,
   };
-  // Use JSON.stringify with deterministic key ordering
-  return JSON.stringify(payload, Object.keys(payload).sort());
+  
+  // Use deterministic serialization with sorted keys
+  return deterministicStringify(payload);
 }

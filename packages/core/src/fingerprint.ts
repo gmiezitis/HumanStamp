@@ -23,13 +23,16 @@ export async function extractFrames(videoPath: string, frameCount: number = 8): 
       throw new Error('Could not determine video duration');
     }
 
-    // Calculate frame timestamps (start, end, and evenly spaced in between)
+    // Calculate frame timestamps (evenly spaced within safe bounds)
     const timestamps: number[] = [];
     if (frameCount === 1) {
       timestamps.push(duration / 2); // middle frame
     } else {
+      // Extract frames from start to 95% of duration to avoid edge cases
+      // where ffmpeg can't extract frames at the very end
+      const safeDuration = duration * 0.95;
       for (let i = 0; i < frameCount; i++) {
-        timestamps.push((i * duration) / (frameCount - 1));
+        timestamps.push((i * safeDuration) / (frameCount - 1));
       }
     }
 
@@ -102,13 +105,15 @@ async function extractFrameAt(videoPath: string, timestamp: number, outputPath: 
 
     ffmpeg.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(`ffmpeg exited with code ${code}: ${stderr}`));
+        reject(new Error(`ffmpeg frame extraction failed (code ${code}): ${stderr}`));
       } else {
         resolve();
       }
     });
 
-    ffmpeg.on('error', reject);
+    ffmpeg.on('error', (err) => {
+      reject(new Error(`Failed to spawn ffmpeg for frame extraction: ${err.message}`));
+    });
   });
 }
 
@@ -167,11 +172,13 @@ async function computeDHashBasic(imagePath: string): Promise<string> {
     ]);
 
     const chunks: Buffer[] = [];
+    let stderr = '';
     ffmpeg.stdout.on('data', (chunk) => chunks.push(chunk));
+    ffmpeg.stderr.on('data', (chunk) => stderr += chunk.toString());
 
     ffmpeg.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(`ffmpeg exited with code ${code}`));
+        reject(new Error(`ffmpeg exited with code ${code}: ${stderr}`));
       } else {
         const data = Buffer.concat(chunks);
         if (data.length !== 72) {

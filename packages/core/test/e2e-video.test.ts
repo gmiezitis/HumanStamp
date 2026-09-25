@@ -12,9 +12,15 @@ import { spawn } from 'child_process';
 import { writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
 
-// Get bundled ffmpeg path
-const ffmpegPath = process.env.FFMPEG_PATH || require('ffmpeg-static');
+// Get bundled ffmpeg path - load synchronously to avoid issues
+let ffmpegPath: string;
+try {
+  ffmpegPath = process.env.FFMPEG_PATH || require('ffmpeg-static');
+} catch (err) {
+  throw new Error(`Failed to load ffmpeg-static: ${err}`);
+}
 
 /**
  * Generate a test video using bundled ffmpeg
