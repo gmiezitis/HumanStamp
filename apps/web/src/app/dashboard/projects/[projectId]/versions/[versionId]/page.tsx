@@ -32,6 +32,14 @@ export default async function VersionDetailPage({
 
   if (!version || version.projectId !== projectId) redirect('/dashboard');
 
+  const { getEventLog } = await import('@/lib/event-log');
+  const events = await getEventLog(
+    version.project.client.workspaceId,
+    'version',
+    versionId
+  );
+  const labelEvent = events.find((e) => e.eventType === 'label.applied');
+
   const olderVersions = version.project.versions.filter(
     (v) => v.versionNumber < version.versionNumber
   );
@@ -81,6 +89,29 @@ export default async function VersionDetailPage({
             </div>
           )}
         </section>
+
+        {labelEvent && (
+          <section className="bg-white border border-stone-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-stone-900 mb-4">AI Disclosure Label</h2>
+            <div className="space-y-2 text-sm mb-4">
+              <div className="flex">
+                <dt className="w-32 text-stone-600">Status:</dt>
+                <dd className="text-green-700 font-medium">✓ Applied</dd>
+              </div>
+              <div className="flex">
+                <dt className="w-32 text-stone-600">Applied:</dt>
+                <dd className="text-stone-900">{new Date(labelEvent.createdAt).toLocaleString()}</dd>
+              </div>
+            </div>
+            <a
+              href={`/api/versions/${versionId}/labeled`}
+              download
+              className="inline-block bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 text-sm"
+            >
+              Download Labelled File
+            </a>
+          </section>
+        )}
 
         {/* Approvals */}
         <section className="bg-white border border-stone-200 rounded-lg p-6">

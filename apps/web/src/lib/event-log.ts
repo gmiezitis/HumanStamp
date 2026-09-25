@@ -124,3 +124,18 @@ export async function getEventChainHead(workspaceId: string): Promise<string | n
 
   return lastEvent?.eventHash || null;
 }
+
+export async function getEventLog(
+  workspaceId: string,
+  entityType?: string,
+  entityId?: string
+) {
+  const where: any = { workspaceId };
+  if (entityType) where.entityType = entityType;
+  if (entityId) where.entityId = entityId;
+
+  return await prisma.eventLog.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  });
+}

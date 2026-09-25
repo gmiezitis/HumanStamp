@@ -13,6 +13,9 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
   const [showSignOffForm, setShowSignOffForm] = useState(false);
   const [signOffEmail, setSignOffEmail] = useState('');
   const [signOffUrl, setSignOffUrl] = useState<string | null>(null);
+  const [showBurnLabelForm, setShowBurnLabelForm] = useState(false);
+  const [labelText, setLabelText] = useState('AI-generated content');
+  const [labelCorner, setLabelCorner] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
   const router = useRouter();
 
   const handleApprove = async (e: React.FormEvent) => {
@@ -79,8 +82,8 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
     }
   };
 
-  const handleBurnLabel = async () => {
-    if (!confirm('Burn AI label into video? This will queue a background job.')) return;
+  const handleBurnLabel = async (e: React.FormEvent) => {
+    e.preventDefault();
     
     setLoading(true);
     setError(null);
@@ -88,6 +91,11 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
     try {
       const res = await fetch(`/api/versions/${versionId}/burn-label`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          labelText,
+          corner: labelCorner,
+        }),
       });
 
       if (!res.ok) {
@@ -95,6 +103,7 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
         throw new Error(data.error || 'Burn label failed');
       }
 
+      setShowBurnLabelForm(false);
       alert('Label burn queued! Check back in a few minutes.');
       router.refresh();
     } catch (err: any) {
@@ -272,13 +281,67 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
         </button>
       )}
 
-      <button
-        onClick={handleBurnLabel}
-        disabled={loading}
-        className="w-full bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 text-sm disabled:opacity-50"
-      >
-        {loading ? 'Processing...' : 'Burn AI Label'}
-      </button>
+      {showBurnLabelForm ? (
+        <form onSubmit={handleBurnLabel} className="space-y-3 p-4 bg-stone-50 border border-stone-200 rounded">
+          <div>
+            <label className="block text-xs font-medium text-stone-700 mb-1">
+              Label Text *
+            </label>
+            <input
+              type="text"
+              value={labelText}
+              onChange={(e) => setLabelText(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-stone-300 rounded"
+              placeholder="e.g. AI-generated content"
+              required
+            />
+            <p className="text-xs text-stone-500 mt-1">
+              Default suggestions: &apos;AI-generated content&apos; or &apos;Contains AI-generated content&apos;
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-stone-700 mb-1">
+              Corner Position *
+            </label>
+            <select
+              value={labelCorner}
+              onChange={(e) => setLabelCorner(e.target.value as any)}
+              className="w-full px-3 py-2 text-sm border border-stone-300 rounded"
+              required
+            >
+              <option value="top-left">Top Left</option>
+              <option value="top-right">Top Right</option>
+              <option value="bottom-left">Bottom Left</option>
+              <option value="bottom-right">Bottom Right</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 text-sm disabled:opacity-50"
+            >
+              {loading ? 'Queuing...' : 'Burn Label'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBurnLabelForm(false)}
+              disabled={loading}
+              className="px-4 py-2 border border-stone-300 rounded hover:bg-stone-50 text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button
+          onClick={() => setShowBurnLabelForm(true)}
+          disabled={loading}
+          className="w-full bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 text-sm disabled:opacity-50"
+        >
+          Burn AI Label
+        </button>
+      )}
 
       <button
         onClick={handleGenerateReceipt}

@@ -6,19 +6,13 @@ import { join } from 'path';
 
 const execAsync = promisify(exec);
 
-export type LabelType = 'ai-generated' | 'ai-content';
 export type LabelCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 export interface BurnLabelOptions {
-  labelType: LabelType;
+  labelText: string;
   corner: LabelCorner;
   durationSeconds?: number;
 }
-
-const LABEL_TEXT = {
-  'ai-generated': 'AI-generated',
-  'ai-content': 'Contains AI-generated content',
-};
 
 function getPositionString(corner: LabelCorner): string {
   const padding = 20;
@@ -45,7 +39,7 @@ export async function burnLabel(
   writeFileSync(inputPath, inputBuffer);
 
   try {
-    const labelText = LABEL_TEXT[options.labelType];
+    const labelText = options.labelText;
     const position = getPositionString(options.corner);
     
     const fontsize = 24;

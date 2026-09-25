@@ -77,6 +77,18 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
     doc.moveDown(1);
   }
 
+  doc.fontSize(12).text('AI DISCLOSURE LABEL', { underline: true });
+  doc.moveDown(0.3);
+  if (payload.aiLabel) {
+    doc.fontSize(10).text(`Label Text: ${payload.aiLabel.labelText}`);
+    doc.text(`Position: ${payload.aiLabel.corner}`);
+    doc.text(`Applied: ${new Date(payload.aiLabel.appliedAt).toLocaleString()}`);
+    doc.fontSize(8).text(`Labelled File SHA-256: ${payload.aiLabel.labeledFileSha256}`);
+  } else {
+    doc.fontSize(10).text('No label applied');
+  }
+  doc.moveDown(1);
+
   doc.fontSize(12).text('FILE HASH', { underline: true });
   doc.moveDown(0.3);
   doc.fontSize(8).text(payload.sha256);

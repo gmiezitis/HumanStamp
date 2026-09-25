@@ -5,7 +5,7 @@ import { enqueueBurnLabel } from '@/lib/queue';
 import { z } from 'zod';
 
 const burnLabelSchema = z.object({
-  labelType: z.enum(['ai-generated', 'ai-content']),
+  labelText: z.string().min(1),
   corner: z.enum(['top-left', 'top-right', 'bottom-left', 'bottom-right']),
   duration: z.number().optional(),
 });
@@ -38,12 +38,12 @@ export async function POST(
     await requireWorkspaceAccess(session.userId, version.project.client.workspaceId);
 
     const body = await req.json();
-    const { labelType, corner, duration } = burnLabelSchema.parse(body);
+    const { labelText, corner, duration } = burnLabelSchema.parse(body);
 
     await enqueueBurnLabel({
       versionId,
       workspaceId: version.project.client.workspaceId,
-      labelType,
+      labelText,
       corner,
       duration: duration || 0,
     });

@@ -141,6 +141,38 @@ export default async function ReceiptPage({ params }: PageProps) {
               </div>
             </div>
 
+            <div className="border-b border-stone-200 pb-4">
+              <h2 className="text-lg font-semibold text-stone-800 mb-2">
+                AI Disclosure Label
+              </h2>
+              {payload.aiLabel ? (
+                <div className="bg-stone-50 rounded p-4 space-y-2 font-mono text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Label Text:</span>
+                    <span className="text-stone-900">{payload.aiLabel.labelText}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Position:</span>
+                    <span className="text-stone-900">{payload.aiLabel.corner}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Applied:</span>
+                    <span className="text-stone-900 text-xs">
+                      {new Date(payload.aiLabel.appliedAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Labelled File SHA-256:</span>
+                    <span className="text-stone-900 text-xs break-all">
+                      {payload.aiLabel.labeledFileSha256}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-stone-600">No label applied</p>
+              )}
+            </div>
+
             {payload.eventChainHead && (
               <div className="border-b border-stone-200 pb-4">
                 <h2 className="text-lg font-semibold text-stone-800 mb-2">

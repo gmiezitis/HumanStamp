@@ -23,6 +23,12 @@ export interface ReceiptPayload {
     email: string;
     createdAt: string;
   }>;
+  aiLabel?: {
+    labelText: string;
+    corner: string;
+    appliedAt: string;
+    labeledFileSha256: string;
+  };
   project: {
     name: string;
     client: {
@@ -63,8 +69,35 @@ export async function generateReceipt(versionId: string): Promise<string> {
     throw new Error('Version not found');
   }
 
-  const { getEventChainHead } = await import('./event-log');
+  const { getEventChainHead, getEventLog } = await import('./event-log');
   const eventChainHead = await getEventChainHead(version.project.client.workspaceId);
+
+  const events = await getEventLog(
+    version.project.client.workspaceId,
+    'version',
+    version.id
+  );
+  const labelEvent = events.find((e) => e.eventType === 'label.applied');
+
+  let aiLabel = undefined;
+  if (labelEvent) {
+    const labelData = JSON.parse(labelEvent.data);
+    const labeledVersionId = labelData.labeledVersionId;
+    if (labeledVersionId) {
+      const labeledVersion = await prisma.version.findUnique({
+        where: { id: labeledVersionId },
+        select: { sha256: true },
+      });
+      if (labeledVersion) {
+        aiLabel = {
+          labelText: labelData.labelText,
+          corner: labelData.corner,
+          appliedAt: labelData.appliedAt,
+          labeledFileSha256: labeledVersion.sha256,
+        };
+      }
+    }
+  }
 
   const payload: ReceiptPayload = {
     versionId: version.id,
@@ -88,6 +121,7 @@ export async function generateReceipt(versionId: string): Promise<string> {
         email: s.email,
         createdAt: s.usedAt!.toISOString(),
       })),
+    aiLabel,
     project: {
       name: version.project.name,
       client: {

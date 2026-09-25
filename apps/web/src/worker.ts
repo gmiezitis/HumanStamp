@@ -79,7 +79,7 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
 
   const { burnLabel: burnLabelFn } = await import('./lib/label-burner');
   const outputBuffer = await burnLabelFn(inputBuffer, {
-    labelType: job.labelType as any,
+    labelText: job.labelText,
     corner: job.corner as any,
     durationSeconds: job.duration,
   });
@@ -122,7 +122,13 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
     'label.applied',
     'version',
     newVersion.id,
-    { labelType: job.labelType, corner: job.corner, originalVersionId: job.versionId }
+    { 
+      labelText: job.labelText, 
+      corner: job.corner, 
+      originalVersionId: job.versionId,
+      labeledVersionId: newVersion.id,
+      appliedAt: new Date().toISOString(),
+    }
   );
 
   console.log(`Label burn complete for version ${job.versionId}, created version ${newVersion.id}`);
