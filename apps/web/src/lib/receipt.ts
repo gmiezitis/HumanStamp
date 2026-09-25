@@ -100,7 +100,7 @@ export async function generateReceipt(versionId: string): Promise<string> {
 
   const keys = await getSigningKeys();
   const payloadStr = JSON.stringify(payload);
-  const signature = await sign(Buffer.from(payloadStr), keys.privateKey);
+  const signature = await sign(new Uint8Array(Buffer.from(payloadStr)), keys.privateKey);
 
   const receiptId = nanoid();
 
