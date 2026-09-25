@@ -1,4 +1,4 @@
-import { createC2pa } from '@contentauth/c2pa-node';
+import * as c2pa from '@contentauth/c2pa-node';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { writeFileSync, unlinkSync } from 'fs';
