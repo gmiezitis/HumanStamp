@@ -33,59 +33,10 @@ export interface VideoScanResult {
 }
 
 export async function scanC2PA(buffer: Buffer): Promise<C2PACredentials> {
-  // TODO: Re-enable C2PA scanning after fixing type issues
+  // TODO: Re-enable C2PA scanning after fixing type issues with @contentauth/c2pa-node
   // For now, return stub data to unblock CI
+  console.warn('C2PA scanning temporarily disabled due to type issues');
   return { found: false };
-  
-  /*
-  try {
-    const c2paInstance = (c2pa as any).createC2pa ? (c2pa as any).createC2pa() : null;
-    
-    const tmpPath = join(tmpdir(), `scan-${Date.now()}.mp4`);
-    writeFileSync(tmpPath, buffer);
-
-    try {
-      const manifest = await c2paInstance?.read(tmpPath);
-      
-      if (!manifest || !manifest.active_manifest) {
-        return { found: false };
-      }
-
-      const activeManifest = manifest.active_manifest;
-      const claimGenerator = activeManifest.claim_generator;
-      const assertions = activeManifest.assertions || {};
-
-      const aiActions = [];
-      if (assertions['c2pa.actions']) {
-        const actions = assertions['c2pa.actions'];
-        if (Array.isArray(actions)) {
-          for (const action of actions) {
-            if (action.action && action.action.includes('ai')) {
-              aiActions.push(action.action);
-            }
-          }
-        }
-      }
-
-      return {
-        found: true,
-        generator: claimGenerator,
-        actions: aiActions,
-        claimGeneratorInfo: assertions['c2pa.claim_generator_info'] || [],
-        raw: activeManifest,
-      };
-    } finally {
-      try {
-        unlinkSync(tmpPath);
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-  } catch (error) {
-    console.error('C2PA scan error:', error);
-    return { found: false };
-  }
-  */
 }
 
 export async function scanFFProbe(buffer: Buffer): Promise<FFProbeMetadata> {
