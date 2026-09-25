@@ -173,7 +173,7 @@ export default function VerifyPage() {
                     href={`/r/${result.receipt.id}`}
                     className="inline-block bg-stone-900 text-white py-2 px-4 rounded-md hover:bg-stone-800"
                   >
-                    View Receipt
+                    Open Receipt
                   </a>
                 </div>
               )}
