@@ -92,9 +92,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                   <div className="flex gap-2">
                     <Link
                       href={`/dashboard/projects/${projectId}/versions/${version.id}`}
-                      className="text-sm text-stone-900 hover:underline"
+                      className="text-sm bg-stone-900 text-white px-3 py-1.5 rounded hover:bg-stone-800"
                     >
-                      View details
+                      View Details & Actions
                     </Link>
                   </div>
                 </div>
