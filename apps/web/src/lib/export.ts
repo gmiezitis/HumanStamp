@@ -112,8 +112,8 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
   const jsonData = {
     data: payload,
     signature: receipt.signature,
-    publicKey: keys.publicKey,
-    keyId: keys.keyId,
+    publicKey: receipt.publicKey,  // Use the key from the receipt, not current signing key
+    keyId: receipt.keyId,
   };
 
   return {
