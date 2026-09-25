@@ -9,14 +9,31 @@ import { createHash } from 'crypto';
 
 const execAsync = promisify(exec);
 
+const getFfmpegPath = (): string => {
+  try {
+    return require('ffmpeg-static') as string;
+  } catch {
+    return 'ffmpeg';
+  }
+};
+
+const getFfprobePath = (): string => {
+  try {
+    return require('ffprobe-static').path;
+  } catch {
+    return 'ffprobe';
+  }
+};
+
 describe('Label Burn', () => {
   let testVideoBuffer: Buffer;
 
   beforeAll(async () => {
+    const ffmpegPath = getFfmpegPath();
     const tmpPath = join(tmpdir(), `test-video-${Date.now()}.mp4`);
     
     await execAsync(
-      `ffmpeg -f lavfi -i testsrc=duration=1:size=320x240:rate=10 -pix_fmt yuv420p "${tmpPath}"`
+      `"${ffmpegPath}" -f lavfi -i testsrc=duration=1:size=320x240:rate=10 -pix_fmt yuv420p "${tmpPath}"`
     );
     
     testVideoBuffer = readFileSync(tmpPath);
@@ -42,13 +59,14 @@ describe('Label Burn', () => {
     writeFileSync(inputTmpPath, testVideoBuffer);
     writeFileSync(outputTmpPath, outputBuffer);
 
+    const ffprobePath = getFfprobePath();
     const { stdout: inputInfo } = await execAsync(
-      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${inputTmpPath}"`
+      `"${ffprobePath}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${inputTmpPath}"`
     );
     const inputDuration = parseFloat(inputInfo.trim());
 
     const { stdout: outputInfo } = await execAsync(
-      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${outputTmpPath}"`
+      `"${ffprobePath}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${outputTmpPath}"`
     );
     const outputDuration = parseFloat(outputInfo.trim());
 
