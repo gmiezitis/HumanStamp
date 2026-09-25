@@ -30,6 +30,7 @@ export async function appendEvent(
   });
 
   const previousHash = lastEvent?.eventHash || null;
+  const timestamp = new Date();
   
   const eventPayload = {
     eventType,
@@ -38,7 +39,7 @@ export async function appendEvent(
     actorId: actorId || null,
     data: JSON.stringify(data),
     previousHash,
-    timestamp: new Date().toISOString(),
+    timestamp: timestamp.toISOString(),
   };
 
   const eventHash = createHash('sha256')
@@ -55,6 +56,7 @@ export async function appendEvent(
       data: JSON.stringify(data),
       previousHash,
       eventHash,
+      createdAt: timestamp,
     },
   });
 }
