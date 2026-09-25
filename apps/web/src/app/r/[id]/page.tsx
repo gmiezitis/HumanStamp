@@ -39,12 +39,16 @@ export default async function ReceiptPage({ params }: PageProps) {
         </div>
 
         <div className="bg-white shadow-sm border border-stone-200 rounded-lg p-8">
-          <h1 className="text-3xl font-bold text-stone-900 mb-2">
-            Record of Approval and Disclosure
-          </h1>
-          <p className="text-sm text-stone-500 mb-6">
-            {payload.project.client.name} — {payload.project.name}
-          </p>
+          <div className="border-b border-stone-200 pb-6 mb-6">
+            <h1 className="text-3xl font-bold text-stone-900 mb-3">
+              Record of Approval and Disclosure
+            </h1>
+            <div className="text-sm text-stone-600 space-y-1">
+              <p><strong>Project:</strong> {payload.project.name}</p>
+              <p><strong>Client:</strong> {payload.project.client.name}</p>
+              <p><strong>Agency:</strong> {payload.project.client.workspace.name}</p>
+            </div>
+          </div>
 
           <div className="space-y-6">
             <div className="border-b border-stone-200 pb-4">
@@ -67,26 +71,26 @@ export default async function ReceiptPage({ params }: PageProps) {
             </div>
 
             <div className="border-b border-stone-200 pb-4">
-              <h2 className="text-lg font-semibold text-stone-800 mb-2">
-                Version Details
+              <h2 className="text-lg font-semibold text-stone-800 mb-3">
+                Version & AI Disclosure
               </h2>
-              <div className="space-y-1 font-mono text-sm">
-                <div>
-                  <span className="text-stone-500">Version:</span>{' '}
-                  <span className="text-stone-900">v{payload.versionNumber}</span>
+              <div className="bg-stone-50 rounded p-4 space-y-2 font-mono text-sm">
+                <div className="flex justify-between">
+                  <span className="text-stone-600">Version:</span>
+                  <span className="text-stone-900 font-semibold">v{payload.versionNumber}</span>
                 </div>
-                <div>
-                  <span className="text-stone-500">Filename:</span>{' '}
-                  <span className="text-stone-900">{payload.filename}</span>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">Filename:</span>
+                  <span className="text-stone-900 text-xs">{payload.filename}</span>
                 </div>
-                <div>
-                  <span className="text-stone-500">Claim:</span>{' '}
-                  <span className="text-stone-900">{payload.aiClaim}</span>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">AI Claim:</span>
+                  <span className="text-stone-900 font-semibold">{payload.aiClaim}</span>
                 </div>
-                <div>
-                  <span className="text-stone-500">C2PA:</span>{' '}
+                <div className="flex justify-between">
+                  <span className="text-stone-600">C2PA Credentials:</span>
                   <span className="text-stone-900">
-                    {payload.c2paPresent ? 'Present' : 'Not found'}
+                    {payload.c2paPresent ? '✓ Present' : 'Not found'}
                   </span>
                 </div>
               </div>
@@ -159,15 +163,40 @@ export default async function ReceiptPage({ params }: PageProps) {
             </div>
           </div>
 
-          <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-md">
-            <h3 className="font-semibold text-amber-900 mb-2 text-sm">
-              Legal Disclaimer
-            </h3>
-            <p className="text-xs text-amber-800">
-              This record documents approvals and disclosures. It is not legal advice or a 
-              certification of compliance. The signature verifies the integrity of this record 
-              only&mdash;not the truth or authenticity of the media content.
-            </p>
+          <div className="mt-8 space-y-4">
+            <div className="flex justify-center gap-4">
+              <a
+                href={`/api/receipts/${id}/export?format=pdf`}
+                download
+                className="bg-stone-900 text-white px-6 py-2 rounded hover:bg-stone-800 text-sm"
+              >
+                Download PDF
+              </a>
+              <a
+                href={`/api/receipts/${id}/export?format=json`}
+                download
+                className="bg-stone-700 text-white px-6 py-2 rounded hover:bg-stone-800 text-sm"
+              >
+                Download JSON
+              </a>
+              <a
+                href="/verify"
+                className="border border-stone-300 text-stone-900 px-6 py-2 rounded hover:bg-stone-50 text-sm"
+              >
+                Verify a Video
+              </a>
+            </div>
+
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
+              <h3 className="font-semibold text-amber-900 mb-2 text-sm">
+                Legal Disclaimer
+              </h3>
+              <p className="text-xs text-amber-800">
+                This record documents approvals and disclosures. It is not legal advice or a 
+                certification of compliance. The signature verifies the integrity of this record 
+                only&mdash;not the truth or authenticity of the media content.
+              </p>
+            </div>
           </div>
         </div>
       </div>
