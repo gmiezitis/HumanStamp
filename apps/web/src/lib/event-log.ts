@@ -79,7 +79,15 @@ export async function verifyEventChain(workspaceId: string): Promise<{ valid: bo
       };
     }
 
-    const eventPayload = {
+    const eventPayload: {
+      eventType: string;
+      entityType: string;
+      entityId: string;
+      actorId: string | null;
+      data: string;
+      previousHash: string | null;
+      timestamp: string;
+    } = {
       eventType: event.eventType,
       entityType: event.entityType,
       entityId: event.entityId,
