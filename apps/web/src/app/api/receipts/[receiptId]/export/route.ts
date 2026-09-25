@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json(exported.json);
     }
 
-    return new NextResponse(exported.pdf, {
+    return new NextResponse(exported.pdf as unknown as BodyInit, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="receipt-${receiptId}.pdf"`,
