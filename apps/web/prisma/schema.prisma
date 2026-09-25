@@ -1,0 +1,27 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Stamp {
+  id           String   @id
+  sha256       String
+  fingerprint  String?
+  recipeJson   String
+  createdAtIso String
+  mode         String
+  tools        String
+  agentRoles   String?
+  approver     String
+  signature    String
+  publicKey    String
+  keyId        String?
+  createdAt    DateTime @default(now())
+
+  @@index([sha256])
+  @@index([fingerprint])
+}
