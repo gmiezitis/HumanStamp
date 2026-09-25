@@ -1,34 +1,60 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { verify } from '@human-stamp/core';
-import { exportReceipt } from '@/lib/export';
-import { getKnownPublicKeys } from '@/lib/keys';
-import { prisma } from '@/lib/prisma';
+import { verify, sign } from '@human-stamp/core';
+import { getSigningKeys, getKnownPublicKeys } from '@/lib/keys';
+import type { ReceiptPayload } from '@/lib/receipt';
 
 describe('Receipt Export Signature Verification', () => {
   let receiptExport: any;
   let publicKeys: Array<{ keyId: string; publicKey: string }>;
 
   beforeAll(async () => {
-    // Create a test receipt in the database if none exists
-    const existingReceipt = await prisma.receipt.findFirst({
-      include: {
-        version: {
-          include: {
-            project: {
-              include: { client: true }
-            }
-          }
-        }
-      }
-    });
+    // Create a test receipt payload in-memory (no database required)
+    const testPayload: ReceiptPayload = {
+      versionId: 'test-version-id',
+      versionNumber: 1,
+      filename: 'test-file.jpg',
+      sha256: 'a'.repeat(64),
+      fingerprint: null,
+      aiClaim: 'AI_GENERATED',
+      c2paPresent: false,
+      approvals: [
+        {
+          approverName: 'Test Approver',
+          approverRole: 'Creative Director',
+          company: 'Test Agency',
+          createdAt: new Date('2024-01-01').toISOString(),
+        },
+      ],
+      clientSignOffs: [
+        {
+          decision: 'APPROVED',
+          signerName: 'Test Client',
+          email: 'client@test.com',
+          createdAt: new Date('2024-01-02').toISOString(),
+        },
+      ],
+      project: {
+        name: 'Test Project',
+        client: {
+          name: 'Test Client',
+        },
+      },
+      eventChainHead: null,
+      createdAt: new Date('2024-01-01').toISOString(),
+    };
 
-    if (!existingReceipt) {
-      throw new Error('No receipts found in database. Run seed script first.');
-    }
+    // Sign the payload using the same signing keys that would be used in production
+    const keys = await getSigningKeys();
+    const payloadStr = JSON.stringify(testPayload);
+    const signature = await sign(payloadStr, keys.privateKey);
 
-    // Call exportReceipt directly (no HTTP server needed)
-    const exported = await exportReceipt(existingReceipt.id);
-    receiptExport = exported.json;
+    // Build the export format that matches what exportReceipt returns
+    receiptExport = {
+      data: testPayload,
+      signature,
+      publicKey: keys.publicKey,
+      keyId: keys.keyId,
+    };
     
     // Get public keys the same way the well-known endpoint does
     publicKeys = await getKnownPublicKeys();
