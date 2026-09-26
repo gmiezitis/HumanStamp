@@ -121,7 +121,7 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
     job.workspaceId,
     'label.applied',
     'version',
-    newVersion.id,
+    job.versionId,
     { 
       labelText: job.labelText, 
       corner: job.corner, 
