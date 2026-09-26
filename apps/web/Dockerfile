@@ -44,7 +44,7 @@ COPY --from=builder --chown=nextjs:nodejs /app ./
 
 RUN npm install -g prisma@5.9.0
 
-RUN chown -R nextjs:nodejs /app /home/nextjs
+RUN mkdir -p /data/storage && chown -R nextjs:nodejs /app /home/nextjs /data
 
 USER nextjs
 
