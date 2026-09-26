@@ -47,7 +47,6 @@ COPY --from=builder /app/apps/web/src/lib ./apps/web/src/lib
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
 
-COPY --from=builder /app/apps/web/node_modules/bcrypt ./apps/web/node_modules/bcrypt
 COPY --from=builder /app/apps/web/node_modules/pg-boss ./apps/web/node_modules/pg-boss
 COPY --from=builder /app/apps/web/node_modules/@human-stamp ./apps/web/node_modules/@human-stamp
 COPY --from=builder /app/packages/core ./packages/core

@@ -32,8 +32,6 @@ async function runSeedIfEmpty() {
     if (userCount === 0) {
       console.log('Database is empty, running inline seed...');
       
-      // Inline seed to avoid tsx dependency issues
-      const bcrypt = require('bcrypt');
       const { randomUUID } = require('crypto');
       
       const workspaceId = randomUUID();
@@ -47,8 +45,8 @@ async function runSeedIfEmpty() {
         },
       });
       
-      // Create demo user
-      const hashedPassword = await bcrypt.hash('demo123', 10);
+      // Create demo user with pre-hashed password (demo123)
+      const hashedPassword = '$2b$10$55tkbj8mL9Ur62lID0UXdutDLmFttxL.J1Sogf1TpJfMmxs73s.6y';
       await prisma.user.create({
         data: {
           id: userId,
@@ -76,11 +74,12 @@ async function runSeedIfEmpty() {
 async function startWorkerInProcess() {
   console.log('Starting in-process worker...');
   
-  const { getQueue } = require('./lib/queue');
-  const { prisma: workerPrisma } = require('./lib/prisma');
-  const { getStorage } = require('./lib/storage');
-  const { scanVideo, detectMismatch } = require('./lib/video-scan');
-  const { generateSegmentFingerprint } = require('./lib/segment-fingerprint');
+  try {
+    const { getQueue } = require(path.join(__dirname, 'lib', 'queue'));
+    const { prisma: workerPrisma } = require(path.join(__dirname, 'lib', 'prisma'));
+    const { getStorage } = require(path.join(__dirname, 'lib', 'storage'));
+    const { scanVideo, detectMismatch } = require(path.join(__dirname, 'lib', 'video-scan'));
+    const { generateSegmentFingerprint } = require(path.join(__dirname, 'lib', 'segment-fingerprint'));
   
   async function processVideo(job) {
     console.log(`Processing video for version ${job.versionId}`);
@@ -138,7 +137,7 @@ async function startWorkerInProcess() {
     const storage = getStorage();
     const inputBuffer = await storage.get(version.storageKey);
 
-    const { burnLabel: burnLabelFn } = require('./lib/label-burner');
+    const { burnLabel: burnLabelFn } = require(path.join(__dirname, 'lib', 'label-burner'));
     const outputBuffer = await burnLabelFn(inputBuffer, {
       labelText: job.labelText,
       corner: job.corner,
@@ -155,7 +154,7 @@ async function startWorkerInProcess() {
 
     const newVersionNumber = (lastVersion?.versionNumber || 0) + 1;
 
-    const { generateStorageKey } = require('./lib/storage');
+    const { generateStorageKey } = require(path.join(__dirname, 'lib', 'storage'));
     const storageKey = generateStorageKey(
       job.workspaceId,
       version.projectId,
@@ -177,7 +176,7 @@ async function startWorkerInProcess() {
       },
     });
 
-    const { appendEvent } = require('./lib/event-log');
+    const { appendEvent } = require(path.join(__dirname, 'lib', 'event-log'));
     await appendEvent(
       job.workspaceId,
       'label.applied',
@@ -194,7 +193,12 @@ async function startWorkerInProcess() {
 
     console.log(`Label burn complete for version ${job.versionId}, created version ${newVersion.id}`);
   }
-
+  } catch (error) {
+    console.error('Worker initialization error:', error);
+    console.log('Worker will not be started due to initialization failure');
+    return;
+  }
+  
   const queue = await getQueue();
 
   await queue.work('process-video', async (job) => {
