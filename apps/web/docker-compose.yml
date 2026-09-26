@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: humanstamp
+      POSTGRES_PASSWORD: humanstamp_dev
+      POSTGRES_DB: humanstamp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U humanstamp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://humanstamp:humanstamp_dev@postgres:5432/humanstamp
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      STORAGE_TYPE: local
+      STORAGE_LOCAL_PATH: /app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - storage_data:/app/storage
+    command: sh -c "cd apps/web && pnpm prisma:push && cd ../.. && node apps/web/server.js"
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://humanstamp:humanstamp_dev@postgres:5432/humanstamp
+      STORAGE_TYPE: local
+      STORAGE_LOCAL_PATH: /app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - storage_data:/app/storage
+    command: sh -c "cd apps/web && node -r esbuild-register src/worker.ts"
+
+volumes:
+  postgres_data:
+  storage_data:

@@ -6,9 +6,14 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "worker": "tsx src/worker.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
+    "prisma:migrate": "prisma migrate dev",
+    "seed": "tsx scripts/seed.ts",
     "clean": "rm -rf .next *.tsbuildinfo"
   },
   "dependencies": {
@@ -17,15 +22,27 @@
     "nanoid": "^3.3.7",
     "next": "^14.1.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "pg-boss": "^9.0.3",
+    "nodemailer": "^6.9.9",
+    "zod": "^3.22.4",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "@aws-sdk/client-s3": "^3.515.0",
+    "@aws-sdk/s3-request-presigner": "^3.515.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
+    "@types/nodemailer": "^6.4.14",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
     "eslint": "^8.57.0",
     "eslint-config-next": "14",
     "prisma": "^5.9.0",
-    "typescript": "^5.3.3"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
   }
 }

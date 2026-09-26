@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -24,4 +24,190 @@ model Stamp {
 
   @@index([sha256])
   @@index([fingerprint])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  memberships   WorkspaceMembership[]
+  approvals     Approval[]
+  
+  @@index([email])
+}
+
+model MagicLink {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  @@index([email])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  memberships WorkspaceMembership[]
+  clients     Client[]
+  events      EventLog[]
+  
+  @@index([createdAt])
+}
+
+model WorkspaceMembership {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        String
+  createdAt   DateTime @default(now())
+  
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+model Client {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projects  Project[]
+  
+  @@index([workspaceId])
+  @@index([createdAt])
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  clientId  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  versions  Version[]
+  signOffs  ClientSignOff[]
+  
+  @@index([clientId])
+  @@index([createdAt])
+}
+
+model Version {
+  id              String   @id @default(cuid())
+  projectId       String
+  versionNumber   Int
+  sha256          String
+  fingerprint     String?
+  storageKey      String
+  filename        String
+  fileSize        Int
+  duration        Float?
+  aiClaim         String
+  c2paPresent     Boolean  @default(false)
+  c2paData        String?
+  ffprobeData     String?
+  mismatchAcked   Boolean  @default(false)
+  mismatchNote    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approvals     Approval[]
+  receipts      Receipt[]
+  
+  @@unique([projectId, versionNumber])
+  @@index([projectId])
+  @@index([sha256])
+  @@index([fingerprint])
+  @@index([createdAt])
+}
+
+model Approval {
+  id            String   @id @default(cuid())
+  versionId     String
+  userId        String
+  approverName  String?
+  approverRole  String
+  company       String
+  createdAt     DateTime @default(now())
+  
+  version Version @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([versionId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ClientSignOff {
+  id            String    @id @default(cuid())
+  projectId     String
+  versionId     String?
+  token         String    @unique
+  email         String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  decision      String?
+  signerName    String?
+  comment       String?
+  createdAt     DateTime  @default(now())
+  
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([createdAt])
+}
+
+model Receipt {
+  id             String   @id @default(cuid())
+  versionId      String
+  signature      String
+  publicKey      String
+  keyId          String
+  payloadVersion Int      @default(1)
+  receiptData    String
+  createdAt      DateTime @default(now())
+  
+  version Version @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  
+  @@index([versionId])
+  @@index([createdAt])
+}
+
+model EventLog {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  eventType     String
+  entityType    String
+  entityId      String
+  actorId       String?
+  data          String
+  previousHash  String?
+  eventHash     String
+  createdAt     DateTime @default(now())
+  
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@index([workspaceId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
