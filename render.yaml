@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: humanstamp-web
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    disk:
+      name: storage
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: humanstamp-db
+          property: connectionString
+      - key: NEXT_PUBLIC_APP_URL
+        value: ${RENDER_EXTERNAL_URL}
+      - key: NEXT_PUBLIC_BASE_URL
+        value: ${RENDER_EXTERNAL_URL}
+      - key: JWT_SECRET
+        generateValue: true
+      - key: RUN_WORKER_IN_PROCESS
+        value: true
+      - key: DEMO_LOGIN
+        value: true
+      - key: STORAGE_TYPE
+        value: local
+      - key: STORAGE_LOCAL_PATH
+        value: /data/storage
+      - key: SIGNING_KEYS_PATH
+        value: /data/signing-keys.json
+      - key: NODE_ENV
+        value: production
+
+databases:
+  - name: humanstamp-db
+    databaseName: humanstamp
+    plan: basic-256mb
+    region: frankfurt

@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getReceipt } from '@/lib/receipt';
+import { getBaseUrl } from '@/lib/url';
 import QRCode from 'qrcode';
 
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     const payload = JSON.parse(receipt.receiptData);
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const receiptUrl = `${baseUrl}/r/${id}`;
 
     const qrDataUrl = await QRCode.toDataURL(receiptUrl, {

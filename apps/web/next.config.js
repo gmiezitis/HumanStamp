@@ -4,7 +4,6 @@ const nextConfig = {
   serverComponentsExternalPackages: ['pdfkit', 'sharp'],
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // Exclude pdfkit from webpack bundling completely on server
       config.externals = config.externals || [];
       config.externals.push('pdfkit');
     }

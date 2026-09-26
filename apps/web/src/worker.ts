@@ -57,6 +57,18 @@ async function generateFingerprint(job: GenerateFingerprintJob): Promise<void> {
     throw new Error(`Version ${job.versionId} not found`);
   }
 
+  const storage = getStorage();
+  const buffer = await storage.get(version.storageKey);
+  
+  const segmentFp = await generateSegmentFingerprint(buffer);
+  
+  await prisma.version.update({
+    where: { id: version.id },
+    data: {
+      fingerprint: JSON.stringify(segmentFp),
+    },
+  });
+
   console.log(`Fingerprint generation complete for version ${job.versionId}`);
 }
 
@@ -131,10 +143,17 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
     }
   );
 
+  // Queue fingerprint generation for the labeled version
+  const { enqueueProcessVideo } = await import('./lib/queue');
+  await enqueueProcessVideo({
+    versionId: newVersion.id,
+    workspaceId: job.workspaceId,
+  });
+
   console.log(`Label burn complete for version ${job.versionId}, created version ${newVersion.id}`);
 }
 
-async function main() {
+export async function startWorker() {
   console.log('Starting worker...');
 
   const queue = await getQueue();
@@ -166,7 +185,7 @@ async function main() {
     }
   });
 
-  console.log('Worker ready');
+  console.log('Worker ready and listening for jobs: process-video, generate-fingerprint, burn-label');
 
   process.on('SIGTERM', async () => {
     console.log('Received SIGTERM, shutting down...');
@@ -183,7 +202,14 @@ async function main() {
   });
 }
 
-main().catch((error) => {
-  console.error('Worker error:', error);
-  process.exit(1);
-});
+async function main() {
+  await startWorker();
+}
+
+// Only run if this is the main module (for standalone worker)
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('Worker error:', error);
+    process.exit(1);
+  });
+}

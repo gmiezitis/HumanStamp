@@ -184,7 +184,43 @@ fly deploy
 
 6. Deploy worker as a separate app with the same database attachment
 
-### Option 4: Render
+### Option 4: Render (One-Click Blueprint)
+
+**Recommended for demos**: This repository includes a `render.yaml` Blueprint for one-click deployment.
+
+1. Fork this repository or push to your own GitHub repo
+2. Visit [Render Dashboard](https://dashboard.render.com/) and sign in
+3. Click "New +" → "Blueprint"
+4. Connect your repository and select the branch
+5. Render will detect `render.yaml` and show the planned resources:
+   - One Docker web service (`humanstamp-web`) with:
+     - In-process worker (no separate worker service needed)
+     - 1GB persistent disk at `/data` for storage and signing keys
+     - Health check at `/api/health`
+   - One PostgreSQL database (`humanstamp-db`, basic-256mb plan)
+6. Review the environment variables (JWT_SECRET is auto-generated)
+7. Click "Apply"
+8. Wait for the deployment to complete (~5-10 minutes)
+9. The app will:
+   - Run database migrations automatically on boot
+   - Seed demo data (user: `demo@humanstamp.test`) if the database is empty
+   - Generate and persist signing keys to `/data/signing-keys.json`
+10. Open the app URL and click "Continue as demo user" to sign in
+
+**Blueprint Features:**
+- Demo login enabled by default (`DEMO_LOGIN=true`)
+- In-process worker for video processing (`RUN_WORKER_IN_PROCESS=true`)
+- Persistent storage at `/data` (1GB) for uploads and signing keys
+- Automatic database migrations and seeding on first boot
+- Health checks for zero-downtime deploys
+
+**To deploy in Frankfurt (default):** The Blueprint is configured for the `frankfurt` region.
+
+**To customize:** Edit `render.yaml` at the repository root before connecting to Render.
+
+### Option 5: Render (Manual Setup - Advanced)
+
+If you need more control or want to use separate worker services:
 
 1. Create a new Web Service on [Render](https://render.com)
 2. Connect your repository

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession, requireWorkspaceAccess } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { appendEvent } from '@/lib/event-log';
+import { getBaseUrl } from '@/lib/url';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
@@ -58,7 +59,7 @@ export async function POST(
       session.userId
     );
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const signOffUrl = `${baseUrl}/signoff/${token}`;
 
     return NextResponse.json({ signOff, signOffUrl });

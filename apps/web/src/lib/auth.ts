@@ -1,6 +1,7 @@
 import { prisma } from './prisma';
 import { nanoid } from 'nanoid';
 import nodemailer from 'nodemailer';
+import { getBaseUrl } from './url';
 
 export interface MagicLinkTokenPayload {
   email: string;
@@ -54,7 +55,7 @@ export async function getOrCreateUser(email: string): Promise<{ id: string; emai
 }
 
 export async function sendMagicLinkEmail(email: string, token: string): Promise<void> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
   const magicLink = `${baseUrl}/auth/verify?token=${token}`;
 
   const isDev = process.env.NODE_ENV !== 'production';
