@@ -1,0 +1,3 @@
+file '/workspace/apps/web/e2e/test-videos/tmp-before.mp4'
+file '/workspace/apps/web/e2e/test-videos/tmp-middle.mp4'
+file '/workspace/apps/web/e2e/test-videos/tmp-after.mp4'

@@ -1,157 +1,235 @@
-import { prisma } from '@/lib/prisma';
-import { verify, createReceiptPayload, truncateHash } from '@human-stamp/core';
-import { getKnownPublicKeys } from '@/lib/keys';
+/* eslint-disable react/no-unescaped-entities */
+import { getReceipt } from '@/lib/receipt';
 import { notFound } from 'next/navigation';
+import { verify } from '@human-stamp/core';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default async function VerifyPage({ params }: PageProps) {
-  const stamp = await prisma.stamp.findUnique({
-    where: { id: params.id },
-  });
+export default async function ReceiptPage({ params }: PageProps) {
+  const { id } = await params;
+  const receipt = await getReceipt(id);
 
-  if (!stamp) {
+  if (!receipt) {
     notFound();
   }
 
-  const recipe = JSON.parse(stamp.recipeJson);
-  const storedFingerprint = stamp.fingerprint ? JSON.parse(stamp.fingerprint) : undefined;
-
-  const payload = createReceiptPayload(
-    stamp.id,
-    stamp.sha256,
-    stamp.recipeJson,
-    stamp.createdAtIso,
-    storedFingerprint
+  const payload = JSON.parse(receipt.receiptData);
+  const isValid = await verify(
+    receipt.receiptData,
+    receipt.signature,
+    receipt.publicKey
   );
 
-  // Verify using server's known public keys (not the key stored with stamp)
-  const knownKeys = await getKnownPublicKeys();
-  const matchingKey = knownKeys.find(k => k.keyId === stamp.keyId);
-  const isValid = matchingKey 
-    ? await verify(payload, stamp.signature, matchingKey.publicKey)
-    : false;
-
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
-      <header style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: '600', marginBottom: '8px' }}>Human Stamp Receipt</h1>
-        <p style={{ color: '#666', fontSize: '14px' }}>Receipt ID: {stamp.id}</p>
-      </header>
-
-      <div style={{ 
-        background: isValid ? '#f0fdf4' : '#fef2f2', 
-        border: `2px solid ${isValid ? '#22c55e' : '#ef4444'}`,
-        borderRadius: '8px',
-        padding: '16px',
-        marginBottom: '32px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '20px' }}>{isValid ? '✓' : '✗'}</span>
-          <strong style={{ color: isValid ? '#15803d' : '#991b1b' }}>
-            Signature {isValid ? 'Valid' : 'Invalid'}
-          </strong>
+    <div className="min-h-screen bg-stone-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8 flex justify-center">
+          <div className="bg-white shadow-lg border-2 border-stone-300 rounded-lg p-6 inline-block">
+            <img
+              src={`/r/${id}/qr`}
+              alt="Receipt QR Card"
+              className="w-80 h-80 object-contain"
+            />
+            <p className="text-center text-xs text-stone-500 mt-3">
+              Scan to verify this record
+            </p>
+          </div>
         </div>
-      </div>
 
-      <section style={{ marginBottom: '32px', padding: '24px', background: '#f9fafb', borderRadius: '8px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#111' }}>
-          Human Approval
-        </h2>
-        <div style={{ display: 'grid', gap: '12px' }}>
-          <div>
-            <div style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mode</div>
-            <div style={{ fontSize: '16px', fontWeight: '500', marginTop: '4px' }}>{stamp.mode}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Approved By</div>
-            <div style={{ fontSize: '16px', fontWeight: '500', marginTop: '4px' }}>{stamp.approver}</div>
-          </div>
-          {recipe.agentRoles && recipe.agentRoles.length > 0 && (
-            <div>
-              <div style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Agent Roles</div>
-              <div style={{ fontSize: '16px', marginTop: '4px' }}>{recipe.agentRoles.join(', ')}</div>
+        <div className="bg-white shadow-sm border border-stone-200 rounded-lg p-8">
+          <div className="border-b border-stone-200 pb-6 mb-6">
+            <h1 className="text-3xl font-bold text-stone-900 mb-3">
+              Record of Approval and Disclosure
+            </h1>
+            <div className="text-sm text-stone-600 space-y-1">
+              <p><strong>Project:</strong> {payload.project.name}</p>
+              <p><strong>Client:</strong> {payload.project.client.name}</p>
             </div>
-          )}
-        </div>
-      </section>
+          </div>
 
-      <section style={{ marginBottom: '32px', padding: '24px', background: '#fefce8', borderRadius: '8px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#111' }}>
-          Tools & Stack Claims
-        </h2>
-        {recipe.tools.length > 0 ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {recipe.tools.map((tool: string) => (
-              <span
-                key={tool}
-                style={{
-                  background: '#fef9c3',
-                  border: '1px solid #fde047',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                }}
+          <div className="space-y-6">
+            <div className="border-b border-stone-200 pb-4">
+              <h2 className="text-lg font-semibold text-stone-800 mb-2">
+                Signature Verification
+              </h2>
+              <div className="flex items-center gap-2">
+                {isValid ? (
+                  <>
+                    <span className="text-green-600">✓</span>
+                    <span className="text-stone-600">Valid signature</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-red-600">✗</span>
+                    <span className="text-stone-600">Invalid signature</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="border-b border-stone-200 pb-4">
+              <h2 className="text-lg font-semibold text-stone-800 mb-3">
+                Version & AI Disclosure
+              </h2>
+              <div className="bg-stone-50 rounded p-4 space-y-2 font-mono text-sm">
+                <div className="flex justify-between">
+                  <span className="text-stone-600">Version:</span>
+                  <span className="text-stone-900 font-semibold">v{payload.versionNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">Filename:</span>
+                  <span className="text-stone-900 text-xs">{payload.filename}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">AI Claim:</span>
+                  <span className="text-stone-900 font-semibold">{payload.aiClaim}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone-600">C2PA Credentials:</span>
+                  <span className="text-stone-900">
+                    {payload.c2paPresent ? '✓ Present' : 'Not found'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {payload.approvals.length > 0 && (
+              <div className="border-b border-stone-200 pb-4">
+                <h2 className="text-lg font-semibold text-stone-800 mb-2">
+                  Internal Approvals
+                </h2>
+                {payload.approvals.map((approval: any, i: number) => (
+                  <div key={i} className="font-mono text-sm mb-2">
+                    <div>
+                      {approval.approverName && `${approval.approverName}, `}
+                      {approval.approverRole} at {approval.company}
+                    </div>
+                    <div className="text-stone-500 text-xs">
+                      {new Date(approval.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {payload.clientSignOffs.length > 0 && (
+              <div className="border-b border-stone-200 pb-4">
+                <h2 className="text-lg font-semibold text-stone-800 mb-2">
+                  Client Sign-offs
+                </h2>
+                {payload.clientSignOffs.map((signoff: any, i: number) => (
+                  <div key={i} className="font-mono text-sm mb-2">
+                    <div>
+                      {signoff.signerName} ({signoff.email}) — {signoff.decision}
+                    </div>
+                    <div className="text-stone-500 text-xs">
+                      {new Date(signoff.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="border-b border-stone-200 pb-4">
+              <h2 className="text-lg font-semibold text-stone-800 mb-2">
+                File Hash (SHA-256)
+              </h2>
+              <div className="font-mono text-xs text-stone-600 break-all">
+                {payload.sha256}
+              </div>
+            </div>
+
+            <div className="border-b border-stone-200 pb-4">
+              <h2 className="text-lg font-semibold text-stone-800 mb-2">
+                AI Disclosure Label
+              </h2>
+              {payload.aiLabel ? (
+                <div className="bg-stone-50 rounded p-4 space-y-2 font-mono text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Label Text:</span>
+                    <span className="text-stone-900">{payload.aiLabel.labelText}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Position:</span>
+                    <span className="text-stone-900">{payload.aiLabel.corner}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Applied:</span>
+                    <span className="text-stone-900 text-xs">
+                      {new Date(payload.aiLabel.appliedAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-600">Labelled File SHA-256:</span>
+                    <span className="text-stone-900 text-xs break-all">
+                      {payload.aiLabel.labeledFileSha256}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-stone-600">No label applied</p>
+              )}
+            </div>
+
+            {payload.eventChainHead && (
+              <div className="border-b border-stone-200 pb-4">
+                <h2 className="text-lg font-semibold text-stone-800 mb-2">
+                  Event Chain Head
+                </h2>
+                <div className="font-mono text-xs text-stone-600 break-all">
+                  {payload.eventChainHead}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h2 className="text-lg font-semibold text-stone-800 mb-2">
+                Created At
+              </h2>
+              <div className="text-stone-600 text-sm">
+                {new Date(payload.createdAt).toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 space-y-4">
+            <div className="flex justify-center gap-4">
+              <a
+                href={`/api/receipts/${id}/export?format=pdf`}
+                download
+                className="bg-stone-900 text-white px-6 py-2 rounded hover:bg-stone-800 text-sm"
               >
-                {tool}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: '#78716c', fontSize: '14px' }}>No tools declared</p>
-        )}
-      </section>
-
-      <section style={{ marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Technical Details</h2>
-        <div style={{ display: 'grid', gap: '12px', fontSize: '14px' }}>
-          <div>
-            <strong>SHA-256:</strong> {truncateHash(stamp.sha256, 16)}
-          </div>
-          {stamp.fingerprint && (
-            <div>
-              <strong>Fingerprint:</strong>{' '}
-              <span style={{ 
-                background: '#e0f2fe', 
-                padding: '2px 8px', 
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontFamily: 'monospace'
-              }}>
-                {JSON.parse(stamp.fingerprint).length} frames (dHash)
-              </span>
-              {' '}
-              <span style={{ color: '#64748b', fontSize: '13px' }}>
-                — soft-bind for strip recovery
-              </span>
+                Download PDF
+              </a>
+              <a
+                href={`/api/receipts/${id}/export?format=json`}
+                download
+                className="bg-stone-700 text-white px-6 py-2 rounded hover:bg-stone-800 text-sm"
+              >
+                Download JSON
+              </a>
+              <a
+                href="/verify"
+                className="border border-stone-300 text-stone-900 px-6 py-2 rounded hover:bg-stone-50 text-sm"
+              >
+                Verify a Video
+              </a>
             </div>
-          )}
-          <div>
-            <strong>Sealed At:</strong> {new Date(stamp.createdAt).toLocaleString()}
-          </div>
-          <div style={{ wordBreak: 'break-all' }}>
-            <strong>Public Key:</strong> <code style={{ fontSize: '12px' }}>{truncateHash(stamp.publicKey, 16)}</code>
+
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
+              <h3 className="font-semibold text-amber-900 mb-2 text-sm">
+                Legal Disclaimer
+              </h3>
+              <p className="text-xs text-amber-800">
+                This record documents approvals and disclosures. It is not legal advice or a 
+                certification of compliance. The signature verifies the integrity of this record 
+                only&mdash;not the truth or authenticity of the media content.
+              </p>
+            </div>
           </div>
         </div>
-      </section>
-
-      <div style={{
-        background: '#fef3c7',
-        border: '2px solid #fbbf24',
-        borderRadius: '8px',
-        padding: '20px',
-        marginTop: '32px'
-      }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>⚠️</span> What This Stamp Does NOT Prove
-        </h3>
-        <p style={{ fontSize: '14px', lineHeight: '1.6', margin: 0, color: '#78350f' }}>
-          This stamp verifies the <strong>signed assertions</strong> made at seal time. It does NOT verify the 
-          authenticity or truth of the media content. The stamp proves that someone with access to the signing 
-          key created this receipt, binding these metadata claims to a specific file hash.
-        </p>
       </div>
     </div>
   );

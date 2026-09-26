@@ -35,7 +35,7 @@ export interface GenerateFingerprintJob {
 export interface BurnLabelJob {
   versionId: string;
   workspaceId: string;
-  labelType: string;
+  labelText: string;
   corner: string;
   duration: number;
 }

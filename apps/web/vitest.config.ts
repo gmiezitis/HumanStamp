@@ -13,10 +13,12 @@ export default defineConfig({
       },
     },
     fileParallelism: false,
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/.next/**'],
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@human-stamp/core': path.resolve(__dirname, '../../packages/core/src'),
     },
   },
 });

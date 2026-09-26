@@ -1,230 +1,193 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
-interface VerifyResult {
-  found: boolean;
-  matchType: 'exact' | 'fingerprint' | 'none';
-  similarity?: number;
-  receipt?: {
-    id: string;
-    sha256: string;
-    recipe: any;
-    createdAt: string;
-  };
-  signatureValid?: boolean;
-  error?: string;
-}
-
-export default function VerifyUploadPage() {
+export default function VerifyPage() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<VerifyResult | null>(null);
-  const router = useRouter();
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setResult(null);
-    }
-  };
-
-  const handleVerify = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!file) return;
 
     setLoading(true);
-    setResult(null);
+    setError(null);
 
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/verify', {
+      const res = await fetch('/api/verify', {
         method: 'POST',
         body: formData,
       });
 
-      const data = await response.json();
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Verification failed');
+        return;
+      }
+
       setResult(data);
-    } catch (error) {
-      console.error('Verify error:', error);
-      setResult({
-        found: false,
-        matchType: 'none',
-        error: 'Failed to verify file',
-      });
+    } catch (err) {
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
-      <header style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: '600', marginBottom: '8px' }}>Verify Video by Upload</h1>
-        <p style={{ color: '#666', fontSize: '14px', lineHeight: '1.6' }}>
-          Upload a video to check if it has been sealed with Human Stamp. Works even after platform metadata stripping via perceptual fingerprinting.
-        </p>
-      </header>
+    <div className="min-h-screen bg-stone-50 p-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white shadow-sm border border-stone-200 rounded-lg p-8">
+          <h1 className="text-3xl font-bold text-stone-900 mb-2">
+            Verify Video
+          </h1>
+          <p className="text-stone-600 mb-6">
+            Upload a video to find its matching record
+          </p>
 
-      <section style={{
-        background: '#f9fafb',
-        border: '2px dashed #d1d5db',
-        borderRadius: '8px',
-        padding: '32px',
-        marginBottom: '32px',
-        textAlign: 'center'
-      }}>
-        <input
-          type="file"
-          accept="video/*"
-          onChange={handleFileChange}
-          style={{
-            display: 'block',
-            width: '100%',
-            padding: '12px',
-            marginBottom: '16px',
-            fontSize: '14px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            background: 'white'
-          }}
-        />
-        
-        {file && (
-          <div style={{ marginBottom: '16px', color: '#374151', fontSize: '14px' }}>
-            Selected: <strong>{file.name}</strong> ({(file.size / 1024 / 1024).toFixed(2)} MB)
-          </div>
-        )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Video File
+              </label>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-stone-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-md file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-stone-900 file:text-white
+                  hover:file:bg-stone-800"
+              />
+            </div>
 
-        <button
-          onClick={handleVerify}
-          disabled={!file || loading}
-          style={{
-            background: file && !loading ? '#3b82f6' : '#9ca3af',
-            color: 'white',
-            padding: '12px 32px',
-            fontSize: '16px',
-            fontWeight: '500',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: file && !loading ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {loading ? 'Verifying...' : 'Verify Video'}
-        </button>
-      </section>
+            <button
+              type="submit"
+              disabled={!file || loading}
+              className="w-full bg-stone-900 text-white py-2 px-4 rounded-md
+                hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Verifying...' : 'Verify'}
+            </button>
+          </form>
 
-      {result && (
-        <section>
-          {result.found ? (
-            <div style={{
-              background: '#f0fdf4',
-              border: '2px solid #22c55e',
-              borderRadius: '8px',
-              padding: '24px',
-              marginBottom: '24px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <span style={{ fontSize: '32px' }}>✓</span>
-                <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#15803d', margin: 0 }}>
-                    Receipt Found
-                  </h2>
-                  <p style={{ fontSize: '14px', color: '#166534', margin: '4px 0 0 0' }}>
-                    {result.matchType === 'exact' && 'Exact SHA-256 match'}
-                    {result.matchType === 'fingerprint' && `Recovered via fingerprint (${Math.round((result.similarity || 0) * 100)}% similar)`}
+          {error && (
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          {result && (
+            <div className="mt-6 space-y-4">
+              {result.matchType === 'exact' && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-green-600">✓</span>
+                    <span className="font-semibold text-green-900">Exact Match Found</span>
+                  </div>
+                  <p className="text-sm text-green-800">
+                    This file exactly matches a recorded version.
                   </p>
+                  {result.project && (
+                    <div className="mt-3 space-y-1">
+                      <p className="text-sm text-green-900">
+                        <span className="font-semibold">Project:</span> {result.project.client} — {result.project.name}
+                      </p>
+                      {result.receipt && (
+                        <p className="text-sm text-green-900">
+                          <span className="font-semibold">Version:</span> v{result.receipt.versionNumber}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
               {result.matchType === 'fingerprint' && (
-                <div style={{
-                  background: '#fef3c7',
-                  border: '1px solid #fbbf24',
-                  borderRadius: '6px',
-                  padding: '12px',
-                  marginBottom: '16px',
-                  fontSize: '13px',
-                  color: '#78350f'
-                }}>
-                  <strong>Soft-bind match:</strong> The exact file bytes differ (likely due to re-encoding or metadata stripping), 
-                  but the perceptual fingerprint matched a sealed video.
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-blue-600">≈</span>
+                    <span className="font-semibold text-blue-900">
+                      Fingerprint Match ({(result.similarity * 100).toFixed(1)}% similar)
+                    </span>
+                  </div>
+                  <p className="text-sm text-blue-800 mb-2">
+                    This file matches a recorded version, but has been re-encoded or edited.
+                  </p>
+                  {result.project && (
+                    <div className="mt-3 space-y-1">
+                      <p className="text-sm text-blue-900">
+                        <span className="font-semibold">Project:</span> {result.project.client} — {result.project.name}
+                      </p>
+                      {result.receipt && (
+                        <p className="text-sm text-blue-900">
+                          <span className="font-semibold">Version:</span> v{result.receipt.versionNumber}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {result.changedSpans && result.changedSpans.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs font-semibold text-blue-900 mb-1">
+                        Changed time spans:
+                      </p>
+                      <ul className="text-xs text-blue-800">
+                        {result.changedSpans.map((span: any, i: number) => (
+                          <li key={i}>
+                            {span.start.toFixed(1)}s - {span.end.toFixed(1)}s
+                          </li>
+                        ))}
+                      </ul>
+                      {result.afterApproval && (
+                        <p className="mt-2 text-xs font-semibold text-amber-900">
+                          ⚠️ Changed after approval
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {result.matchType === 'none' && (
+                <div className="p-4 bg-stone-100 border border-stone-300 rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-stone-600">○</span>
+                    <span className="font-semibold text-stone-900">No Match Found</span>
+                  </div>
+                  <p className="text-sm text-stone-700">
+                    No matching record found for this video.
+                  </p>
                 </div>
               )}
 
               {result.receipt && (
-                <>
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '12px', color: '#166534', marginBottom: '4px' }}>Receipt ID</div>
-                    <div style={{ fontSize: '16px', fontWeight: '500' }}>{result.receipt.id}</div>
-                  </div>
-
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ fontSize: '12px', color: '#166534', marginBottom: '4px' }}>Sealed By</div>
-                    <div style={{ fontSize: '16px', fontWeight: '500' }}>{result.receipt.recipe.approver}</div>
-                  </div>
-
-                  <button
-                    onClick={() => router.push(`/r/${result.receipt?.id}`)}
-                    style={{
-                      background: '#15803d',
-                      color: 'white',
-                      padding: '10px 20px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                    }}
+                <div className="mt-4">
+                  <a
+                    href={`/r/${result.receipt.id}`}
+                    className="inline-block bg-stone-900 text-white py-2 px-4 rounded-md hover:bg-stone-800"
                   >
-                    View Full Receipt →
-                  </button>
-                </>
+                    Open Receipt
+                  </a>
+                </div>
               )}
             </div>
-          ) : (
-            <div style={{
-              background: '#fef2f2',
-              border: '2px solid #ef4444',
-              borderRadius: '8px',
-              padding: '24px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '32px' }}>✗</span>
-                <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#991b1b', margin: 0 }}>
-                  No Receipt Found
-                </h2>
-              </div>
-              <p style={{ fontSize: '14px', color: '#7f1d1d', margin: 0 }}>
-                {result.error || 'This video has not been sealed with Human Stamp, or the content has changed significantly.'}
-              </p>
-            </div>
           )}
-        </section>
-      )}
+        </div>
 
-      <section style={{
-        marginTop: '48px',
-        padding: '24px',
-        background: '#f9fafb',
-        borderRadius: '8px'
-      }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>How It Works</h3>
-        <ol style={{ fontSize: '14px', lineHeight: '1.8', color: '#374151', paddingLeft: '20px' }}>
-          <li>First, we check if the exact file (SHA-256) matches a sealed receipt</li>
-          <li>If not, we extract ~8 frames and compute perceptual hashes (dHash)</li>
-          <li>We compare against fingerprints of all sealed videos</li>
-          <li>If similarity ≥ 85%, we return the matching receipt</li>
-        </ol>
-        <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '16px', marginBottom: 0 }}>
-          <strong>Why dHash?</strong> Difference hash (dHash) is resilient to re-encoding, minor compression, 
-          and metadata stripping while remaining fast and deterministic. It computes horizontal gradient differences 
-          per frame, making it robust to platform processing.
-        </p>
-      </section>
+        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
+          <p className="text-xs text-amber-800">
+            <strong>Note:</strong> Verification matches uploaded files against recorded versions.
+            A match shows the file corresponds to a specific record, not that the content is authentic.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
