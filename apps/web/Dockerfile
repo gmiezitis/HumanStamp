@@ -47,6 +47,13 @@ COPY --from=builder /app/apps/web/src/lib ./apps/web/src/lib
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
 
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/packages/core/dist ./packages/core/dist
+COPY --from=builder /app/packages/core/package.json ./packages/core/package.json
+
+RUN npm install -g prisma@5.9.0
+
 RUN chown -R nextjs:nodejs ./apps/web /home/nextjs
 
 USER nextjs

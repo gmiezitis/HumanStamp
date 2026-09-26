@@ -9,19 +9,14 @@ async function runMigrations() {
   console.log('Running database migrations...');
   
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    
-    // Simple schema push by just trying to connect and create tables if needed
-    // In production on Render, you'd run migrations via their CLI or a one-time job
-    console.log('Connecting to database...');
-    await prisma.$connect();
-    console.log('Database connected successfully');
-    await prisma.$disconnect();
-    
-    console.log('Note: For production deployment, run migrations using: prisma migrate deploy');
+    execSync('prisma migrate deploy', {
+      cwd: path.join(__dirname, '..'),
+      stdio: 'inherit',
+      env: { ...process.env }
+    });
+    console.log('Database migrations completed successfully');
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error('Database migration failed:', error);
     throw error;
   }
 }
