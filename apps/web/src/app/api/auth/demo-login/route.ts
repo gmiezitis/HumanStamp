@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   if (process.env.DEMO_LOGIN !== 'true') {
-    return NextResponse.json({ error: 'Demo login not enabled' }, { status: 404 });
+    return NextResponse.json({ error: 'Demo login not enabled' }, { status: 403 });
   }
 
   const demoUser = await prisma.user.findUnique({
