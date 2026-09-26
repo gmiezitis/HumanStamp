@@ -143,6 +143,13 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
     }
   );
 
+  // Queue fingerprint generation for the labeled version
+  const { enqueueProcessVideo } = await import('./lib/queue');
+  await enqueueProcessVideo({
+    versionId: newVersion.id,
+    workspaceId: job.workspaceId,
+  });
+
   console.log(`Label burn complete for version ${job.versionId}, created version ${newVersion.id}`);
 }
 
@@ -178,7 +185,7 @@ export async function startWorker() {
     }
   });
 
-  console.log('Worker ready and listening for jobs');
+  console.log('Worker ready and listening for jobs: process-video, generate-fingerprint, burn-label');
 
   process.on('SIGTERM', async () => {
     console.log('Received SIGTERM, shutting down...');
