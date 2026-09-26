@@ -45,22 +45,26 @@ async function runSeedIfEmpty() {
         },
       });
       
-      // Create demo user with pre-hashed password (demo123)
-      const hashedPassword = '$2b$10$55tkbj8mL9Ur62lID0UXdutDLmFttxL.J1Sogf1TpJfMmxs73s.6y';
+      // Create demo user (no password - uses JWT-only demo login)
       await prisma.user.create({
         data: {
           id: userId,
           email: 'demo@humanstamp.test',
           name: 'Demo User',
-          passwordHash: hashedPassword,
+        },
+      });
+      
+      // Create workspace membership
+      await prisma.workspaceMembership.create({
+        data: {
           workspaceId,
+          userId,
           role: 'ADMIN',
-          emailVerified: true,
         },
       });
       
       console.log('Seed completed successfully');
-      console.log('Demo user: demo@humanstamp.test / demo123');
+      console.log('Demo user: demo@humanstamp.test (use demo login button)');
     } else {
       console.log(`Database already has ${userCount} user(s), skipping seed`);
     }
