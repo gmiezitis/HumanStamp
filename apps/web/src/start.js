@@ -79,8 +79,9 @@ async function startWorkerInProcess() {
   console.log('Starting in-process worker...');
   
   try {
-    // Register tsx to handle TypeScript files
-    require('tsx/cjs/api').register();
+    // Use tsx to handle TypeScript files
+    const tsxPath = '/usr/local/lib/node_modules/tsx/dist/loader.cjs';
+    require(tsxPath);
     
     const { getQueue } = require(path.join(__dirname, 'lib', 'queue'));
     const { prisma: workerPrisma } = require(path.join(__dirname, 'lib', 'prisma'));
