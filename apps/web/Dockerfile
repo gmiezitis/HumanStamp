@@ -35,7 +35,7 @@ FROM base AS runner
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+    adduser --system --uid 1001 --home /home/nextjs nextjs
 
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
@@ -47,13 +47,22 @@ COPY --from=builder /app/apps/web/src/lib ./apps/web/src/lib
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
 
-RUN chown -R nextjs:nodejs ./apps/web
+RUN chown -R nextjs:nodejs ./apps/web /home/nextjs
+
+RUN corepack enable && corepack prepare pnpm@8.15.4 --activate
 
 USER nextjs
+
+ENV PNPM_HOME="/home/nextjs/.local/share/pnpm"
+ENV PATH="/home/nextjs/.local/share/pnpm:$PATH"
+
+RUN mkdir -p "$PNPM_HOME" && \
+    pnpm add -g prisma tsx
 
 EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV HOME="/home/nextjs"
 
 CMD ["node", "apps/web/src/start.js"]

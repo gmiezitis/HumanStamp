@@ -9,17 +9,17 @@ async function runMigrations() {
   console.log('Running database migrations...');
   
   try {
-    execSync('cd apps/web && npx prisma migrate deploy', {
+    execSync('prisma migrate deploy --schema=./apps/web/prisma/schema.prisma', {
       stdio: 'inherit',
-      cwd: path.join(__dirname, '..', '..'),
+      cwd: process.cwd(),
     });
     console.log('Migrations completed successfully');
   } catch (error) {
     console.warn('Migration failed, trying db push for development...');
     try {
-      execSync('cd apps/web && npx prisma db push --skip-generate', {
+      execSync('prisma db push --skip-generate --schema=./apps/web/prisma/schema.prisma', {
         stdio: 'inherit',
-        cwd: path.join(__dirname, '..', '..'),
+        cwd: process.cwd(),
       });
       console.log('DB push completed successfully');
     } catch (pushError) {
@@ -39,9 +39,9 @@ async function runSeedIfEmpty() {
     
     if (userCount === 0) {
       console.log('Database is empty, running seed script...');
-      execSync('cd apps/web && npx tsx scripts/seed.ts', {
+      execSync('tsx ./apps/web/scripts/seed.ts', {
         stdio: 'inherit',
-        cwd: path.join(__dirname, '..', '..'),
+        cwd: process.cwd(),
       });
       console.log('Seed completed successfully');
     } else {
@@ -57,11 +57,11 @@ async function runSeedIfEmpty() {
 async function startWorkerInProcess() {
   console.log('Starting in-process worker...');
   
-  const { getQueue } = require('./lib/queue');
-  const { prisma: workerPrisma } = require('./lib/prisma');
-  const { getStorage } = require('./lib/storage');
-  const { scanVideo, detectMismatch } = require('./lib/video-scan');
-  const { generateSegmentFingerprint } = require('./lib/segment-fingerprint');
+  const { getQueue } = require('./apps/web/src/lib/queue');
+  const { prisma: workerPrisma } = require('./apps/web/src/lib/prisma');
+  const { getStorage } = require('./apps/web/src/lib/storage');
+  const { scanVideo, detectMismatch } = require('./apps/web/src/lib/video-scan');
+  const { generateSegmentFingerprint } = require('./apps/web/src/lib/segment-fingerprint');
   
   async function processVideo(job) {
     console.log(`Processing video for version ${job.versionId}`);
@@ -119,7 +119,7 @@ async function startWorkerInProcess() {
     const storage = getStorage();
     const inputBuffer = await storage.get(version.storageKey);
 
-    const { burnLabel: burnLabelFn } = require('./lib/label-burner');
+    const { burnLabel: burnLabelFn } = require('./apps/web/src/lib/label-burner');
     const outputBuffer = await burnLabelFn(inputBuffer, {
       labelText: job.labelText,
       corner: job.corner,
@@ -136,7 +136,7 @@ async function startWorkerInProcess() {
 
     const newVersionNumber = (lastVersion?.versionNumber || 0) + 1;
 
-    const { generateStorageKey } = require('./lib/storage');
+    const { generateStorageKey } = require('./apps/web/src/lib/storage');
     const storageKey = generateStorageKey(
       job.workspaceId,
       version.projectId,
@@ -158,7 +158,7 @@ async function startWorkerInProcess() {
       },
     });
 
-    const { appendEvent } = require('./lib/event-log');
+    const { appendEvent } = require('./apps/web/src/lib/event-log');
     await appendEvent(
       job.workspaceId,
       'label.applied',
@@ -202,7 +202,7 @@ async function startWorkerInProcess() {
 async function startServer() {
   console.log('Starting Next.js server...');
   
-  const serverPath = path.join(__dirname, 'server.js');
+  const serverPath = path.join(__dirname, '..', '..', 'server.js');
   require(serverPath);
 }
 
@@ -230,4 +230,3 @@ async function main() {
 }
 
 main();
-
