@@ -79,8 +79,8 @@ async function startWorkerInProcess() {
   console.log('Starting in-process worker...');
   
   try {
-    // Use tsx/cjs to register TypeScript loader
-    require('tsx/cjs');
+    // Use tsx to register TypeScript loader
+    require('/usr/local/lib/node_modules/tsx/dist/cjs/index.cjs');
     
     const workerPath = path.join(__dirname, 'worker.ts');
     const workerModule = require(workerPath);
