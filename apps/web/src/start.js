@@ -79,6 +79,15 @@ async function startWorkerInProcess() {
   console.log('Starting in-process worker...');
   
   try {
+    // Set NODE_PATH to include the worker's node_modules
+    const nodePath = path.join(__dirname, '..', 'node_modules');
+    if (process.env.NODE_PATH) {
+      process.env.NODE_PATH = `${nodePath}:${process.env.NODE_PATH}`;
+    } else {
+      process.env.NODE_PATH = nodePath;
+    }
+    require('module').Module._initPaths();
+    
     // Use tsx to register TypeScript loader
     require('/usr/local/lib/node_modules/tsx/dist/cjs/index.cjs');
     
