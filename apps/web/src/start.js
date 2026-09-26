@@ -81,11 +81,11 @@ async function runSeedIfEmpty() {
 async function startWorkerInProcess() {
   console.log('Starting in-process worker...');
   
-  const { getQueue } = require('./apps/web/src/lib/queue');
-  const { prisma: workerPrisma } = require('./apps/web/src/lib/prisma');
-  const { getStorage } = require('./apps/web/src/lib/storage');
-  const { scanVideo, detectMismatch } = require('./apps/web/src/lib/video-scan');
-  const { generateSegmentFingerprint } = require('./apps/web/src/lib/segment-fingerprint');
+  const { getQueue } = require('../lib/queue');
+  const { prisma: workerPrisma } = require('../lib/prisma');
+  const { getStorage } = require('../lib/storage');
+  const { scanVideo, detectMismatch } = require('../lib/video-scan');
+  const { generateSegmentFingerprint } = require('../lib/segment-fingerprint');
   
   async function processVideo(job) {
     console.log(`Processing video for version ${job.versionId}`);
@@ -143,7 +143,7 @@ async function startWorkerInProcess() {
     const storage = getStorage();
     const inputBuffer = await storage.get(version.storageKey);
 
-    const { burnLabel: burnLabelFn } = require('./apps/web/src/lib/label-burner');
+    const { burnLabel: burnLabelFn } = require('../lib/label-burner');
     const outputBuffer = await burnLabelFn(inputBuffer, {
       labelText: job.labelText,
       corner: job.corner,
@@ -160,7 +160,7 @@ async function startWorkerInProcess() {
 
     const newVersionNumber = (lastVersion?.versionNumber || 0) + 1;
 
-    const { generateStorageKey } = require('./apps/web/src/lib/storage');
+    const { generateStorageKey } = require('../lib/storage');
     const storageKey = generateStorageKey(
       job.workspaceId,
       version.projectId,
@@ -182,7 +182,7 @@ async function startWorkerInProcess() {
       },
     });
 
-    const { appendEvent } = require('./apps/web/src/lib/event-log');
+    const { appendEvent } = require('../lib/event-log');
     await appendEvent(
       job.workspaceId,
       'label.applied',
@@ -226,7 +226,7 @@ async function startWorkerInProcess() {
 async function startServer() {
   console.log('Starting Next.js server...');
   
-  const serverPath = path.join(__dirname, '..', '..', 'server.js');
+  const serverPath = path.join(__dirname, '..', '..', '..', 'server.js');
   require(serverPath);
 }
 

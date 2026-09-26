@@ -41,18 +41,13 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
-COPY --from=builder /app/node_modules/.pnpm/prisma@*/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client ./node_modules/@prisma/client
-COPY --from=builder /app/node_modules/.pnpm/@prisma+engines@*/node_modules/@prisma/engines ./node_modules/@prisma/engines
-COPY --from=builder /app/node_modules/.pnpm/tsx@*/node_modules/tsx ./node_modules/tsx
-
 COPY --from=builder /app/apps/web/src/worker.ts ./apps/web/src/worker.ts
 COPY --from=builder /app/apps/web/src/start.js ./apps/web/src/start.js
 COPY --from=builder /app/apps/web/src/lib ./apps/web/src/lib
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
 
-RUN chown -R nextjs:nodejs ./apps/web ./node_modules /home/nextjs
+RUN chown -R nextjs:nodejs ./apps/web /home/nextjs
 
 USER nextjs
 
@@ -61,6 +56,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV HOME="/home/nextjs"
-ENV PATH="/app/node_modules/prisma:$PATH"
 
 CMD ["node", "apps/web/src/start.js"]
