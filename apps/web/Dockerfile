@@ -55,8 +55,10 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
-COPY --from=builder /app/apps/web/dist/worker.js ./apps/web/dist/worker.js
+COPY --from=builder /app/apps/web/src/worker.ts ./apps/web/src/worker.ts
+COPY --from=builder /app/apps/web/src/lib ./apps/web/src/lib
 COPY --from=builder /app/apps/web/src/start.js ./apps/web/src/start.js
+COPY --from=builder /app/apps/web/tsconfig.json ./apps/web/tsconfig.json
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
 

@@ -79,7 +79,20 @@ async function startWorkerInProcess() {
   console.log('Starting in-process worker...');
   
   try {
-    const workerPath = path.join(__dirname, '..', 'dist', 'worker.js');
+    const workerPath = path.join(__dirname, 'worker.ts');
+    const { execSync } = require('child_process');
+    
+    // Use tsx to load and start the worker module
+    const tsxBin = '/usr/local/bin/tsx';
+    process.env.TS_NODE_PROJECT = path.join(__dirname, '..', 'tsconfig.json');
+    
+    // Load worker using tsx API
+    const Module = require('module');
+    const originalRequire = Module.prototype.require;
+    
+    // Register tsx loader
+    require(tsxBin + '/cjs');
+    
     const workerModule = require(workerPath);
     
     if (workerModule.startWorker) {
