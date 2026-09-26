@@ -42,8 +42,7 @@ RUN cd apps/web && esbuild src/worker.ts \
   --external:ffprobe-static \
   --external:pdfkit \
   --external:sharp \
-  --external:@human-stamp/core \
-  --external:pg-boss
+  --external:@human-stamp/core
 
 FROM base AS runner
 
