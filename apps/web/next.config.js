@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   transpilePackages: ['@human-stamp/core'],
   serverComponentsExternalPackages: ['pdfkit', 'sharp'],
   webpack: (config, { isServer }) => {
