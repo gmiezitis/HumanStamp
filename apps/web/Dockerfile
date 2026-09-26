@@ -30,7 +30,9 @@ RUN cd apps/web && pnpm prisma:generate
 RUN cd packages/core && pnpm build
 RUN cd apps/web && pnpm build
 
-RUN cd apps/web && npx esbuild src/worker.ts \
+RUN npm install -g esbuild@0.21.5
+
+RUN cd apps/web && esbuild src/worker.ts \
   --bundle \
   --platform=node \
   --target=node20 \
