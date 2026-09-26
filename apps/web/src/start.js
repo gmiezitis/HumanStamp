@@ -8,8 +8,11 @@ const RUN_WORKER_IN_PROCESS = process.env.RUN_WORKER_IN_PROCESS === 'true';
 async function runMigrations() {
   console.log('Running database migrations...');
   
+  const prismaBin = path.join(__dirname, '..', '..', '..', 'node_modules', 'prisma', 'build', 'index.js');
+  const schemaPath = path.join(__dirname, '..', 'prisma', 'schema.prisma');
+  
   try {
-    execSync('prisma migrate deploy --schema=./apps/web/prisma/schema.prisma', {
+    execSync(`node ${prismaBin} migrate deploy --schema=${schemaPath}`, {
       stdio: 'inherit',
       cwd: process.cwd(),
     });
@@ -17,7 +20,7 @@ async function runMigrations() {
   } catch (error) {
     console.warn('Migration failed, trying db push for development...');
     try {
-      execSync('prisma db push --skip-generate --schema=./apps/web/prisma/schema.prisma', {
+      execSync(`node ${prismaBin} db push --skip-generate --schema=${schemaPath}`, {
         stdio: 'inherit',
         cwd: process.cwd(),
       });
@@ -39,7 +42,9 @@ async function runSeedIfEmpty() {
     
     if (userCount === 0) {
       console.log('Database is empty, running seed script...');
-      execSync('tsx ./apps/web/scripts/seed.ts', {
+      const tsxBin = path.join(__dirname, '..', '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs');
+      const seedScript = path.join(__dirname, '..', 'scripts', 'seed.ts');
+      execSync(`node ${tsxBin} ${seedScript}`, {
         stdio: 'inherit',
         cwd: process.cwd(),
       });
