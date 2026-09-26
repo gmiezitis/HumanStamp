@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SignInPage() {
@@ -9,10 +9,15 @@ export default function SignInPage() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [isDemoLoginEnabled, setIsDemoLoginEnabled] = useState(false);
   const router = useRouter();
 
-  const isDemoLoginEnabled = typeof window !== 'undefined' && 
-    (window as any).__DEMO_LOGIN_ENABLED === true;
+  useEffect(() => {
+    fetch('/api/auth/config')
+      .then(res => res.json())
+      .then(data => setIsDemoLoginEnabled(data.demoLoginEnabled))
+      .catch(() => setIsDemoLoginEnabled(false));
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -133,11 +138,6 @@ export default function SignInPage() {
           </>
         )}
       </div>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `window.__DEMO_LOGIN_ENABLED = ${process.env.DEMO_LOGIN === 'true'};`,
-        }}
-      />
     </div>
   );
 }
