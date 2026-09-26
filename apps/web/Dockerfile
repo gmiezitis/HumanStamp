@@ -40,6 +40,14 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
+COPY --from=builder /app/apps/web/src/worker.ts ./apps/web/src/worker.ts
+COPY --from=builder /app/apps/web/src/start.js ./apps/web/src/start.js
+COPY --from=builder /app/apps/web/src/lib ./apps/web/src/lib
+COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
+COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
+
+RUN chown -R nextjs:nodejs ./apps/web
+
 USER nextjs
 
 EXPOSE 3000
@@ -47,4 +55,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "apps/web/src/start.js"]

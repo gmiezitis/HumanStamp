@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   transpilePackages: ['@human-stamp/core'],
   serverComponentsExternalPackages: ['pdfkit', 'sharp'],
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // Exclude pdfkit from webpack bundling completely on server
       config.externals = config.externals || [];
       config.externals.push('pdfkit');
     }
