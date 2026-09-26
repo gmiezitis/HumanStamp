@@ -57,6 +57,18 @@ async function generateFingerprint(job: GenerateFingerprintJob): Promise<void> {
     throw new Error(`Version ${job.versionId} not found`);
   }
 
+  const storage = getStorage();
+  const buffer = await storage.get(version.storageKey);
+  
+  const segmentFp = await generateSegmentFingerprint(buffer);
+  
+  await prisma.version.update({
+    where: { id: version.id },
+    data: {
+      fingerprint: JSON.stringify(segmentFp),
+    },
+  });
+
   console.log(`Fingerprint generation complete for version ${job.versionId}`);
 }
 
