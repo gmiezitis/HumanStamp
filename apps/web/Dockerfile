@@ -61,8 +61,7 @@ COPY --from=builder /app/apps/web/src/start.js ./apps/web/src/start.js
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
 
-COPY --from=builder /app/apps/web/node_modules/pg-boss ./apps/web/node_modules/pg-boss
-COPY --from=builder /app/apps/web/node_modules/@human-stamp ./apps/web/node_modules/@human-stamp
+COPY --from=builder /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=builder /app/packages/core ./packages/core
 
 RUN npm install -g prisma@5.9.0 tsx@4.7.0
