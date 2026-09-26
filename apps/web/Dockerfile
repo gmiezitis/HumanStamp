@@ -27,7 +27,8 @@ COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
 COPY . .
 
 RUN cd apps/web && pnpm prisma:generate
-RUN pnpm build
+RUN cd packages/core && pnpm build
+RUN cd apps/web && pnpm build
 
 FROM base AS runner
 
