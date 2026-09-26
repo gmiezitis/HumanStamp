@@ -51,7 +51,7 @@ COPY --from=builder /app/apps/web/node_modules/pg-boss ./apps/web/node_modules/p
 COPY --from=builder /app/apps/web/node_modules/@human-stamp ./apps/web/node_modules/@human-stamp
 COPY --from=builder /app/packages/core ./packages/core
 
-RUN npm install -g prisma@5.9.0
+RUN npm install -g prisma@5.9.0 tsx@4.7.0
 
 RUN chown -R nextjs:nodejs ./apps/web /home/nextjs
 
