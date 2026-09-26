@@ -134,7 +134,7 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
   console.log(`Label burn complete for version ${job.versionId}, created version ${newVersion.id}`);
 }
 
-async function main() {
+export async function startWorker() {
   console.log('Starting worker...');
 
   const queue = await getQueue();
@@ -166,7 +166,7 @@ async function main() {
     }
   });
 
-  console.log('Worker ready');
+  console.log('Worker ready and listening for jobs');
 
   process.on('SIGTERM', async () => {
     console.log('Received SIGTERM, shutting down...');
@@ -183,7 +183,14 @@ async function main() {
   });
 }
 
-main().catch((error) => {
-  console.error('Worker error:', error);
-  process.exit(1);
-});
+async function main() {
+  await startWorker();
+}
+
+// Only run if this is the main module (for standalone worker)
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('Worker error:', error);
+    process.exit(1);
+  });
+}

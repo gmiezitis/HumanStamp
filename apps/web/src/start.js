@@ -79,10 +79,26 @@ async function startWorkerInProcess() {
   console.log('Starting in-process worker...');
   
   try {
-    // Use tsx to handle TypeScript files
-    const tsxPath = '/usr/local/lib/node_modules/tsx/dist/loader.cjs';
-    require(tsxPath);
+    const workerPath = path.join(__dirname, '..', 'dist', 'worker.js');
+    const workerModule = require(workerPath);
     
+    if (workerModule.startWorker) {
+      await workerModule.startWorker();
+      console.log('Worker started successfully');
+    } else {
+      throw new Error('Worker module does not export startWorker function');
+    }
+  
+  } catch (error) {
+    console.error('Worker initialization failed:', error);
+    throw error;
+  }
+}
+
+async function oldStartWorkerInProcess() {
+  console.log('Starting in-process worker (old implementation)...');
+  
+  try {
     const { getQueue } = require(path.join(__dirname, 'lib', 'queue'));
     const { prisma: workerPrisma } = require(path.join(__dirname, 'lib', 'prisma'));
     const { getStorage } = require(path.join(__dirname, 'lib', 'storage'));
