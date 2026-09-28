@@ -30,87 +30,245 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
   const chunks: Buffer[] = [];
   doc.on('data', (chunk) => chunks.push(chunk));
 
-  // Use Times-Roman (standard PDF font, no external files needed)
-  doc.fontSize(24).text('Human Stamp', { align: 'center' });
-  doc.moveDown(0.3);
-  doc.fontSize(18).text('Record of Approval and Disclosure', { align: 'center' });
+  const pageWidth = doc.page.width;
+  const leftMargin = doc.page.margins.left;
+  const rightMargin = doc.page.margins.right;
+  const contentWidth = pageWidth - leftMargin - rightMargin;
+
+  // Header box with brand
+  doc.save();
+  doc.fillColor('#09090b')
+    .rect(leftMargin, 40, contentWidth, 80)
+    .fill();
+  
+  doc.fillColor('#ffffff')
+    .fontSize(28)
+    .font('Helvetica-Bold')
+    .text('HUMAN STAMP', leftMargin, 55, { align: 'center', width: contentWidth });
+  
+  doc.fontSize(14)
+    .font('Helvetica')
+    .text('Record of Approval and Disclosure', leftMargin, 85, { align: 'center', width: contentWidth });
+  doc.restore();
+
+  doc.moveDown(7);
+  doc.fontSize(9).fillColor('#71717a').text(`Receipt ID: ${receiptId}`, { align: 'center' });
   doc.moveDown(1);
 
-  doc.fontSize(10).text(`Receipt ID: ${receiptId}`, { align: 'center' });
+  // Project box
+  const boxPadding = 12;
+  let boxY = doc.y;
+  doc.save();
+  doc.fillColor('#fafafa')
+    .rect(leftMargin, boxY, contentWidth, 70)
+    .fill()
+    .strokeColor('#e4e4e7')
+    .rect(leftMargin, boxY, contentWidth, 70)
+    .stroke();
+  doc.restore();
+
+  doc.fillColor('#09090b')
+    .fontSize(10)
+    .font('Helvetica-Bold')
+    .text('PROJECT', leftMargin + boxPadding, boxY + boxPadding);
+  doc.font('Helvetica')
+    .fontSize(10)
+    .text(`Client: ${payload.project.client.name}`, leftMargin + boxPadding, boxY + boxPadding + 18);
+  doc.text(`Project: ${payload.project.name}`, leftMargin + boxPadding, boxY + boxPadding + 33);
+  
+  doc.y = boxY + 80;
+
+  // Version box
+  boxY = doc.y;
+  doc.save();
+  doc.fillColor('#fafafa')
+    .rect(leftMargin, boxY, contentWidth, 85)
+    .fill()
+    .strokeColor('#e4e4e7')
+    .rect(leftMargin, boxY, contentWidth, 85)
+    .stroke();
+  doc.restore();
+
+  doc.fillColor('#09090b')
+    .fontSize(10)
+    .font('Helvetica-Bold')
+    .text('VERSION', leftMargin + boxPadding, boxY + boxPadding);
+  doc.font('Helvetica')
+    .fontSize(10)
+    .text(`Version: v${payload.versionNumber}`, leftMargin + boxPadding, boxY + boxPadding + 18);
+  doc.text(`Filename: ${payload.filename}`, leftMargin + boxPadding, boxY + boxPadding + 33);
+  doc.text(`AI Claim: ${payload.aiClaim}`, leftMargin + boxPadding, boxY + boxPadding + 48);
+  doc.text(`C2PA Present: ${payload.c2paPresent ? 'Yes' : 'No'}`, leftMargin + boxPadding, boxY + boxPadding + 63);
+  
+  doc.y = boxY + 95;
+
+  // Approvals box
+  if (payload.approvals.length > 0) {
+    const approvalBoxHeight = 55 + (payload.approvals.length * 25);
+    boxY = doc.y;
+    doc.save();
+    doc.fillColor('#f0fdf4')
+      .rect(leftMargin, boxY, contentWidth, approvalBoxHeight)
+      .fill()
+      .strokeColor('#bbf7d0')
+      .rect(leftMargin, boxY, contentWidth, approvalBoxHeight)
+      .stroke();
+    doc.restore();
+
+    doc.fillColor('#09090b')
+      .fontSize(10)
+      .font('Helvetica-Bold')
+      .text('INTERNAL APPROVALS', leftMargin + boxPadding, boxY + boxPadding);
+    
+    let approvalY = boxY + boxPadding + 18;
+    for (const approval of payload.approvals) {
+      doc.font('Helvetica')
+        .fontSize(9)
+        .text(
+          `✓ ${approval.approverName ? `${approval.approverName}, ` : ''}${approval.approverRole} at ${approval.company}`,
+          leftMargin + boxPadding,
+          approvalY
+        );
+      doc.fontSize(8)
+        .fillColor('#71717a')
+        .text(`  ${new Date(approval.createdAt).toLocaleString()}`, leftMargin + boxPadding + 10, approvalY + 12);
+      doc.fillColor('#09090b');
+      approvalY += 25;
+    }
+    doc.y = boxY + approvalBoxHeight + 10;
+  }
+
+  // Client sign-offs box
+  if (payload.clientSignOffs.length > 0) {
+    const signoffBoxHeight = 55 + (payload.clientSignOffs.length * 25);
+    boxY = doc.y;
+    doc.save();
+    doc.fillColor('#eff6ff')
+      .rect(leftMargin, boxY, contentWidth, signoffBoxHeight)
+      .fill()
+      .strokeColor('#bfdbfe')
+      .rect(leftMargin, boxY, contentWidth, signoffBoxHeight)
+      .stroke();
+    doc.restore();
+
+    doc.fillColor('#09090b')
+      .fontSize(10)
+      .font('Helvetica-Bold')
+      .text('CLIENT SIGN-OFFS', leftMargin + boxPadding, boxY + boxPadding);
+    
+    let signoffY = boxY + boxPadding + 18;
+    for (const signoff of payload.clientSignOffs) {
+      doc.font('Helvetica')
+        .fontSize(9)
+        .text(
+          `✓ ${signoff.signerName} (${signoff.email}) — ${signoff.decision}`,
+          leftMargin + boxPadding,
+          signoffY
+        );
+      doc.fontSize(8)
+        .fillColor('#71717a')
+        .text(`  ${new Date(signoff.createdAt).toLocaleString()}`, leftMargin + boxPadding + 10, signoffY + 12);
+      doc.fillColor('#09090b');
+      signoffY += 25;
+    }
+    doc.y = boxY + signoffBoxHeight + 10;
+  }
+
+  // AI Label box
+  const labelBoxHeight = payload.aiLabel ? 95 : 45;
+  boxY = doc.y;
+  doc.save();
+  doc.fillColor('#fef3c7')
+    .rect(leftMargin, boxY, contentWidth, labelBoxHeight)
+    .fill()
+    .strokeColor('#fde047')
+    .rect(leftMargin, boxY, contentWidth, labelBoxHeight)
+    .stroke();
+  doc.restore();
+
+  doc.fillColor('#09090b')
+    .fontSize(10)
+    .font('Helvetica-Bold')
+    .text('EU AI ACT ARTICLE 50 DISCLOSURE', leftMargin + boxPadding, boxY + boxPadding);
+  
+  if (payload.aiLabel) {
+    doc.font('Helvetica')
+      .fontSize(9)
+      .text(`Label Text: ${payload.aiLabel.text}`, leftMargin + boxPadding, boxY + boxPadding + 18);
+    doc.text(`Position: ${payload.aiLabel.corner}`, leftMargin + boxPadding, boxY + boxPadding + 33);
+    doc.text(`Applied: ${new Date(payload.aiLabel.appliedAt).toLocaleString()}`, leftMargin + boxPadding, boxY + boxPadding + 48);
+    doc.fontSize(7)
+      .fillColor('#71717a')
+      .text(`Labeled File SHA-256: ${payload.aiLabel.labeledSha256}`, leftMargin + boxPadding, boxY + boxPadding + 63, {
+        width: contentWidth - (boxPadding * 2),
+      });
+    doc.fillColor('#09090b');
+  } else {
+    doc.font('Helvetica')
+      .fontSize(9)
+      .text('No label applied', leftMargin + boxPadding, boxY + boxPadding + 18);
+  }
+  
+  doc.y = boxY + labelBoxHeight + 10;
+
+  // File hash box
+  boxY = doc.y;
+  doc.save();
+  doc.fillColor('#fafafa')
+    .rect(leftMargin, boxY, contentWidth, 45)
+    .fill()
+    .strokeColor('#e4e4e7')
+    .rect(leftMargin, boxY, contentWidth, 45)
+    .stroke();
+  doc.restore();
+
+  doc.fillColor('#09090b')
+    .fontSize(10)
+    .font('Helvetica-Bold')
+    .text('FILE SHA-256 HASH', leftMargin + boxPadding, boxY + boxPadding);
+  doc.font('Courier')
+    .fontSize(7)
+    .fillColor('#71717a')
+    .text(payload.sha256, leftMargin + boxPadding, boxY + boxPadding + 18, {
+      width: contentWidth - (boxPadding * 2),
+    });
+  doc.fillColor('#09090b');
+  
+  doc.y = boxY + 55;
+
+  // Created timestamp
+  doc.font('Helvetica')
+    .fontSize(9)
+    .fillColor('#71717a')
+    .text(`Created: ${new Date(payload.createdAt).toLocaleString()}`, { align: 'center' });
   doc.moveDown(1.5);
 
-  doc.fontSize(12).text('PROJECT', { underline: true });
-  doc.moveDown(0.3);
-  doc.fontSize(11).text(`Client: ${payload.project.client.name}`);
-  doc.text(`Project: ${payload.project.name}`);
-  doc.moveDown(1);
+  // Signature badge
+  doc.save();
+  const badgeY = doc.y;
+  doc.fillColor('#10b981')
+    .roundedRect(leftMargin + (contentWidth / 2) - 60, badgeY, 120, 30, 4)
+    .fill();
+  doc.fillColor('#ffffff')
+    .fontSize(10)
+    .font('Helvetica-Bold')
+    .text('✓ CRYPTOGRAPHICALLY SIGNED', leftMargin, badgeY + 9, {
+      width: contentWidth,
+      align: 'center',
+    });
+  doc.restore();
+  
+  doc.moveDown(2.5);
 
-  doc.fontSize(12).text('VERSION', { underline: true });
-  doc.moveDown(0.3);
-  doc.fontSize(11).text(`Version: v${payload.versionNumber}`);
-  doc.text(`Filename: ${payload.filename}`);
-  doc.text(`AI Claim: ${payload.aiClaim}`);
-  doc.text(`C2PA Present: ${payload.c2paPresent ? 'Yes' : 'No'}`);
-  doc.moveDown(1);
-
-  if (payload.approvals.length > 0) {
-    doc.fontSize(12).text('INTERNAL APPROVALS', { underline: true });
-    doc.moveDown(0.3);
-    for (const approval of payload.approvals) {
-      doc.fontSize(10).text(
-        `• ${approval.approverName ? `${approval.approverName}, ` : ''}${approval.approverRole} at ${approval.company}`,
-      );
-      doc.fontSize(9).text(`  ${new Date(approval.createdAt).toLocaleString()}`, { indent: 10 });
-    }
-    doc.moveDown(1);
-  }
-
-  if (payload.clientSignOffs.length > 0) {
-    doc.fontSize(12).text('CLIENT SIGN-OFFS', { underline: true });
-    doc.moveDown(0.3);
-    for (const signoff of payload.clientSignOffs) {
-      doc.fontSize(10).text(
-        `• ${signoff.signerName} (${signoff.email}) — ${signoff.decision}`,
-      );
-      doc.fontSize(9).text(`  ${new Date(signoff.createdAt).toLocaleString()}`, { indent: 10 });
-    }
-    doc.moveDown(1);
-  }
-
-  doc.fontSize(12).text('AI DISCLOSURE LABEL', { underline: true });
-  doc.moveDown(0.3);
-  if (payload.aiLabel) {
-    doc.fontSize(10).text(`Label Text: ${payload.aiLabel.labelText}`);
-    doc.text(`Position: ${payload.aiLabel.corner}`);
-    doc.text(`Applied: ${new Date(payload.aiLabel.appliedAt).toLocaleString()}`);
-    doc.fontSize(8).text(`Labelled File SHA-256: ${payload.aiLabel.labeledFileSha256}`);
-  } else {
-    doc.fontSize(10).text('No label applied');
-  }
-  doc.moveDown(1);
-
-  doc.fontSize(12).text('FILE HASH', { underline: true });
-  doc.moveDown(0.3);
-  doc.fontSize(8).text(payload.sha256);
-  doc.moveDown(1);
-
-  if (payload.eventChainHead) {
-    doc.fontSize(12).text('EVENT CHAIN HEAD', { underline: true });
-    doc.moveDown(0.3);
-    doc.fontSize(8).text(payload.eventChainHead);
-    doc.moveDown(1);
-  }
-
-  doc.fontSize(12).text('CREATED', { underline: true });
-  doc.moveDown(0.3);
-  doc.fontSize(10).text(new Date(payload.createdAt).toLocaleString());
-  doc.moveDown(2);
-
-  doc.fontSize(8).fillColor('#666').text(
-    'Legal Disclaimer: This record documents approvals and disclosures. It is not legal advice or a certification of compliance. ' +
-    'The signature verifies the integrity of this record only—not the truth or authenticity of the media content.',
-    { align: 'justify' }
-  );
+  // Legal disclaimer
+  doc.font('Helvetica')
+    .fontSize(7)
+    .fillColor('#a1a1aa')
+    .text(
+      'Legal Disclaimer: This record documents approvals and disclosures. It is not legal advice or a certification of compliance. ' +
+      'The cryptographic signature verifies the integrity of this record only—not the truth or authenticity of the media content.',
+      { align: 'justify' }
+    );
 
   doc.end();
 
