@@ -79,7 +79,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">View Receipt</p>
-                    <p className="text-xs text-muted-foreground">Cryptographic proof</p>
+                    <p className="text-xs text-muted-foreground">Signed receipt</p>
                   </div>
                   <Link href={`/r/${project.versions.find(v => v.receipts && v.receipts.length > 0)?.receipts?.[0]?.id}`}>
                     <Button size="sm" variant="outline">View</Button>
