@@ -25,15 +25,20 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
           _count: { select: { approvals: true } },
         },
       },
-      clientSignOffs: true,
     },
   });
 
   if (!project) redirect('/dashboard');
 
+  // Fetch client sign-offs for this project
+  const clientSignOffs = await prisma.clientSignOff.findMany({
+    where: { projectId },
+    orderBy: { createdAt: 'desc' },
+  });
+
   const latestVersion = project.versions[0];
   const hasReceipt = project.versions.some(v => v.receipts && v.receipts.length > 0);
-  const pendingSignOff = project.clientSignOffs.find(s => !s.usedAt);
+  const pendingSignOff = clientSignOffs.find(s => !s.usedAt);
 
   return (
     <div className="min-h-screen bg-background">

@@ -22,7 +22,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 'approve',
     title: 'Internal Approval',
-    description: 'Each approval is saved with the approver's account, role and server time, and added to a tamper-evident event log. The final receipt is digitally signed.',
+    description: 'Each approval is saved with the approver\'s account, role and server time, and added to a tamper-evident event log. The final receipt is digitally signed.',
     icon: <CheckCircle className="h-5 w-5 text-green-600" />,
   },
   {
@@ -34,7 +34,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 'receipt',
     title: 'Export Signed Receipt',
-    description: 'Generate a signed receipt with QR code. Download as PDF + JSON evidence pack. Anyone with the link can check that the record hasn't been changed since it was signed.',
+    description: 'Generate a signed receipt with QR code. Download as PDF + JSON evidence pack. Anyone with the link can check that the record hasn\'t been changed since it was signed.',
     icon: <CheckCircle className="h-5 w-5 text-amber-600" />,
   },
 ];
