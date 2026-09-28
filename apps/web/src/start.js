@@ -92,9 +92,9 @@ function startNextServer() {
   console.log('Starting Next.js server...');
   
   const port = process.env.PORT || 3000;
-  const nextBin = path.join(__dirname, '..', 'node_modules', '.bin', 'next');
+  const nextBin = require.resolve('next/dist/bin/next');
   
-  const server = spawn(nextBin, ['start', '-p', port], {
+  const server = spawn('node', [nextBin, 'start', '-p', port], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env },
     stdio: 'inherit',
