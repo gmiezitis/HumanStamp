@@ -95,13 +95,13 @@ export default function HomePage() {
                 </div>
                 <CardTitle>EU AI Act Labelling</CardTitle>
                 <CardDescription>
-                  Article 50 disclosure requirements handled
+                  Record your AI-labelling decision
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Burn-in AI content labels, export signed receipts, and provide
-                  verifiable proof for legal teams.
+                  Burn a visible AI label into the video, and give legal teams a signed record of who approved what, and when.
+                  <span className="block mt-2 text-xs">Not legal advice or a compliance certification.</span>
                 </p>
               </CardContent>
             </Card>
@@ -118,8 +118,7 @@ export default function HomePage() {
               <div>
                 <h3 className="text-xl font-semibold mb-2">Upload & Compare Versions</h3>
                 <p className="text-muted-foreground">
-                  Upload video versions to your project. Compare any two versions to see
-                  exactly what changed, down to the second.
+                  Upload video versions to your project. Compare any two versions to see which seconds of the picture changed.
                 </p>
               </div>
             </div>
