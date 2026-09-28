@@ -163,6 +163,10 @@ export default async function CompareVersionsPage({
               <CardDescription>
                 Segments that differ between the two versions
               </CardDescription>
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground bg-muted px-3 py-2 rounded">
+                <AlertCircle className="h-3 w-3" />
+                <span>Visual changes only; audio differences are not detected</span>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="relative bg-muted rounded-lg p-4 mb-4">
