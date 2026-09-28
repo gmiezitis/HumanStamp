@@ -148,10 +148,10 @@ export async function GET(
           where: { id: labeledVersionId },
         });
 
-        if (labeledVersion) {
+        if (labeledVersion && labeledVersion.storageKey) {
           try {
             const storage = getStorage();
-            const videoBuffer = await storage.get(labeledVersion.storageKey);
+            const videoBuffer = await storage.read(labeledVersion.storageKey);
             files.push({
               name: `labeled-${labeledVersion.filename}`,
               data: videoBuffer,

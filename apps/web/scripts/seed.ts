@@ -412,6 +412,7 @@ async function main() {
       corner: 'top-left',
       appliedAt: new Date().toISOString(),
       labeledFileSha256: labeledV3Hash,
+      labeledVersionId: labeledVersion.id,
     },
     eventChainHead: eventChain?.eventHash || null,
     createdAt: new Date().toISOString(),
