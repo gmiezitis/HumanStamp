@@ -369,7 +369,7 @@ async function main() {
       text: 'AI-GENERATED',
       corner: 'bottom-right',
       durationSeconds: 3,
-      appliedAt: version3.labelAppliedAt?.toISOString() || new Date().toISOString(),
+      appliedAt: new Date().toISOString(),
       labeledSha256: labeledV3Hash,
     },
     eventChainHead: eventChain?.eventHash || null,
