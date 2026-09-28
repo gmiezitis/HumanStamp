@@ -33,9 +33,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
 
   const latestVersion = project.versions[0];
   const hasReceipt = project.versions.some(v => v.receipt);
-  const pendingSignOff = project.versions.find(v => 
-    v.clientSignOffs.some(s => !s.usedAt)
-  );
+  const pendingSignOff = project.clientSignOffs.find(s => !s.usedAt);
 
   return (
     <div className="min-h-screen bg-background">
@@ -100,9 +98,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">Awaiting Sign-off</p>
-                    <p className="text-xs text-muted-foreground">v{pendingSignOff.versionNumber} needs review</p>
+                    <p className="text-xs text-muted-foreground">
+                      {pendingSignOff.versionId ? `v${project.versions.find(v => v.id === pendingSignOff.versionId)?.versionNumber}` : 'Version'} needs review
+                    </p>
                   </div>
-                  <Link href={`/signoff/${pendingSignOff.clientSignOffs.find(s => !s.usedAt)?.token}`}>
+                  <Link href={`/signoff/${pendingSignOff.token}`}>
                     <Button size="sm" variant="outline">Review</Button>
                   </Link>
                 </div>
@@ -135,9 +135,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
               <div className="space-y-4">
                 {project.versions.map((version, idx) => {
                   const hasApprovals = version._count.approvals > 0;
-                  const hasSignOff = version.clientSignOffs.some(s => s.usedAt);
-                  const pendingSignOff = version.clientSignOffs.find(s => !s.usedAt);
-                  const hasLabel = version.labeledStorageKey;
+                  const hasSignOff = project.clientSignOffs.some(s => s.versionId === version.id && s.usedAt);
+                  const pendingVersionSignOff = project.clientSignOffs.find(s => s.versionId === version.id && !s.usedAt);
+                  const hasLabel = false; // Labeled video fields not in schema yet
 
                   return (
                     <div key={version.id} className="flex gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
@@ -169,7 +169,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                             {hasSignOff && (
                               <Badge variant="default" className="bg-blue-500">Client Signed</Badge>
                             )}
-                            {pendingSignOff && (
+                            {pendingVersionSignOff && (
                               <Badge variant="default" className="bg-amber-500">Awaiting Client</Badge>
                             )}
                             {hasLabel && (
