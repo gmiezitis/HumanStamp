@@ -315,11 +315,54 @@ async function main() {
   console.log('Generating AI disclosure label for version 3...');
   const labeledV3Buffer = await burnLabel(v3Buffer, {
     labelText: 'AI-GENERATED',
-    corner: 'bottom-right',
+    corner: 'top-left',
     durationSeconds: 3,
   });
   const labeledV3Hash = createHash('sha256').update(labeledV3Buffer).digest('hex');
   console.log(`Labeled video generated: ${labeledV3Buffer.length} bytes, SHA: ${labeledV3Hash.substring(0, 16)}...`);
+
+  // Store labeled video as a file
+  const labeledFilename = `winter-launch-v3-final-labeled.mp4`;
+  const labeledStorageKey = `${workspace.id}/${project.id}/labeled-${labeledV3Hash.substring(0, 16)}.mp4`;
+  await writeFile(path.join(storagePath, labeledStorageKey), labeledV3Buffer);
+  
+  // Create labeled version record
+  const labeledVersion = await prisma.version.create({
+    data: {
+      projectId: project.id,
+      versionNumber: 4,
+      filename: labeledFilename,
+      sha256: labeledV3Hash,
+      fingerprint: null,
+      aiClaim: 'ai-generated',
+      c2paPresent: false,
+      storageKey: labeledStorageKey,
+      duration: 8,
+    },
+  });
+  console.log(`Labeled version created: ${labeledVersion.id}`);
+
+  // Log label event
+  await prisma.eventLog.create({
+    data: {
+      workspaceId: workspace.id,
+      entityType: 'version',
+      entityId: version3.id,
+      eventType: 'label.applied',
+      eventHash: createHash('sha256').update(JSON.stringify({ 
+        labelText: 'AI-GENERATED', 
+        corner: 'top-left',
+        timestamp: new Date().toISOString() 
+      })).digest('hex'),
+      data: JSON.stringify({
+        labelText: 'AI-GENERATED',
+        corner: 'top-left',
+        appliedAt: new Date().toISOString(),
+        originalVersionId: version3.id,
+        labeledVersionId: labeledVersion.id,
+      }),
+    },
+  });
 
   console.log('Generating receipt for version 3...');
   const { getSigningKeys } = await import('../src/lib/keys');
