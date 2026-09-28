@@ -21,11 +21,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
         orderBy: { versionNumber: 'desc' },
         include: {
           approvals: { include: { user: true } },
-          clientSignOffs: true,
           receipt: true,
           _count: { select: { approvals: true } },
         },
       },
+      clientSignOffs: true,
     },
   });
 
