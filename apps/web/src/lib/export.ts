@@ -175,7 +175,7 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
   }
 
   // AI Label box
-  const labelBoxHeight = payload.aiLabel ? 95 : 45;
+  const labelBoxHeight = payload.aiLabel ? 115 : 65;
   boxY = doc.y;
   doc.save();
   doc.fillColor('#fef3c7')
@@ -189,7 +189,7 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
   doc.fillColor('#09090b')
     .fontSize(10)
     .font('Helvetica-Bold')
-    .text('EU AI ACT ARTICLE 50 DISCLOSURE', leftMargin + boxPadding, boxY + boxPadding);
+    .text('VISIBLE AI LABEL (applied by the agency)', leftMargin + boxPadding, boxY + boxPadding);
   
   if (payload.aiLabel) {
     doc.font('Helvetica')
@@ -203,10 +203,19 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
         width: contentWidth - (boxPadding * 2),
       });
     doc.fillColor('#09090b');
+    doc.fontSize(8)
+      .font('Helvetica')
+      .text('Whether a label is legally required, and in what form, is the deployer\'s own assessment.', leftMargin + boxPadding, boxY + boxPadding + 80, {
+        width: contentWidth - (boxPadding * 2),
+      });
   } else {
     doc.font('Helvetica')
       .fontSize(9)
       .text('No label applied', leftMargin + boxPadding, boxY + boxPadding + 18);
+    doc.fontSize(8)
+      .text('Whether a label is legally required, and in what form, is the deployer\'s own assessment.', leftMargin + boxPadding, boxY + boxPadding + 33, {
+        width: contentWidth - (boxPadding * 2),
+      });
   }
   
   doc.y = boxY + labelBoxHeight + 10;
@@ -247,12 +256,18 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
   doc.save();
   const badgeY = doc.y;
   doc.fillColor('#10b981')
-    .roundedRect(leftMargin + (contentWidth / 2) - 60, badgeY, 120, 30, 4)
+    .roundedRect(leftMargin + (contentWidth / 2) - 80, badgeY, 160, 40, 4)
     .fill();
   doc.fillColor('#ffffff')
-    .fontSize(10)
+    .fontSize(9)
     .font('Helvetica-Bold')
-    .text('✓ CRYPTOGRAPHICALLY SIGNED', leftMargin, badgeY + 9, {
+    .text('✓ RECEIPT DATA SIGNED', leftMargin, badgeY + 7, {
+      width: contentWidth,
+      align: 'center',
+    });
+  doc.fontSize(7)
+    .font('Helvetica')
+    .text('(Ed25519)', leftMargin, badgeY + 22, {
       width: contentWidth,
       align: 'center',
     });
