@@ -16,6 +16,8 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
   const [showBurnLabelForm, setShowBurnLabelForm] = useState(false);
   const [labelText, setLabelText] = useState('AI-GENERATED');
   const [labelCorner, setLabelCorner] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('top-left');
+  const [deepfakeAssessment, setDeepfakeAssessment] = useState<'yes' | 'no' | 'unsure'>('no');
+  const [deepfakeReason, setDeepfakeReason] = useState('');
   const router = useRouter();
 
   const handleApprove = async (e: React.FormEvent) => {
