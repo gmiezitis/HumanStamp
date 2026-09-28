@@ -8,6 +8,8 @@ const burnLabelSchema = z.object({
   labelText: z.string().min(1),
   corner: z.enum(['top-left', 'top-right', 'bottom-left', 'bottom-right']),
   duration: z.number().optional(),
+  deepfakeAssessment: z.enum(['yes', 'no', 'unsure']).optional(),
+  deepfakeReason: z.string().optional(),
 });
 
 export async function POST(
