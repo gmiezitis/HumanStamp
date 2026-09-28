@@ -319,16 +319,7 @@ async function main() {
     durationSeconds: 3,
   });
   const labeledV3Hash = createHash('sha256').update(labeledV3Buffer).digest('hex');
-
-  await prisma.version.update({
-    where: { id: version3.id },
-    data: {
-      labeledStorageKey: `demo/${project.id}/v3-labeled.mp4`,
-      labeledSha256: labeledV3Hash,
-      labeledFileSize: labeledV3Buffer.length,
-      labelAppliedAt: new Date(),
-    },
-  });
+  console.log(`Labeled video generated: ${labeledV3Buffer.length} bytes, SHA: ${labeledV3Hash.substring(0, 16)}...`);
 
   console.log('Generating receipt for version 3...');
   const keys = process.env.SIGNING_PRIVATE_KEY && process.env.SIGNING_PUBLIC_KEY
