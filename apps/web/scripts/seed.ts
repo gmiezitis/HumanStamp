@@ -312,6 +312,24 @@ async function main() {
     },
   });
 
+  console.log('Generating AI disclosure label for version 3...');
+  const labeledV3Buffer = await burnLabel(v3Buffer, {
+    labelText: 'AI-GENERATED',
+    corner: 'bottom-right',
+    durationSeconds: 3,
+  });
+  const labeledV3Hash = createHash('sha256').update(labeledV3Buffer).digest('hex');
+
+  await prisma.version.update({
+    where: { id: version3.id },
+    data: {
+      labeledStorageKey: `demo/${project.id}/v3-labeled.mp4`,
+      labeledSha256: labeledV3Hash,
+      labeledFileSize: labeledV3Buffer.length,
+      labelAppliedAt: new Date(),
+    },
+  });
+
   console.log('Generating receipt for version 3...');
   const keys = process.env.SIGNING_PRIVATE_KEY && process.env.SIGNING_PUBLIC_KEY
     ? { privateKey: process.env.SIGNING_PRIVATE_KEY, publicKey: process.env.SIGNING_PUBLIC_KEY }
@@ -356,7 +374,13 @@ async function main() {
       comment: s.comment,
       createdAt: s.createdAt.toISOString(),
     })),
-    aiLabel: null,
+    aiLabel: {
+      text: 'AI-GENERATED',
+      corner: 'bottom-right',
+      durationSeconds: 3,
+      appliedAt: version3.labelAppliedAt?.toISOString() || new Date().toISOString(),
+      labeledSha256: labeledV3Hash,
+    },
     eventChainHead: eventChain?.eventHash || null,
     createdAt: new Date().toISOString(),
   };
