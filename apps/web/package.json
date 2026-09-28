@@ -22,6 +22,8 @@
     "@contentauth/c2pa-node": "^0.6.0",
     "@human-stamp/core": "workspace:*",
     "@prisma/client": "^5.9.0",
+    "@types/archiver": "^8.0.0",
+    "archiver": "^8.0.0",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

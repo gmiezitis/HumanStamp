@@ -230,16 +230,24 @@ export default async function ReceiptPage({ params }: PageProps) {
 
         <div className="mt-8 space-y-4 print:hidden">
           <div className="flex flex-wrap justify-center gap-3">
+            <a href={`/api/receipts/${id}/evidence-pack`} download>
+              <Button size="lg">
+                <Download className="mr-2 h-5 w-5" />
+                Download Evidence Pack
+              </Button>
+            </a>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3">
             <a href={`/api/receipts/${id}/export?format=pdf`} download>
-              <Button>
+              <Button variant="outline">
                 <Download className="mr-2 h-4 w-4" />
-                Download PDF
+                PDF Only
               </Button>
             </a>
             <a href={`/api/receipts/${id}/export?format=json`} download>
-              <Button variant="secondary">
+              <Button variant="outline">
                 <Download className="mr-2 h-4 w-4" />
-                Download JSON
+                JSON Only
               </Button>
             </a>
             <Link href="/verify">
