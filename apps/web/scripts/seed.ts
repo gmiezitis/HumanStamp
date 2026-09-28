@@ -322,9 +322,8 @@ async function main() {
   console.log(`Labeled video generated: ${labeledV3Buffer.length} bytes, SHA: ${labeledV3Hash.substring(0, 16)}...`);
 
   console.log('Generating receipt for version 3...');
-  const keys = process.env.SIGNING_PRIVATE_KEY && process.env.SIGNING_PUBLIC_KEY
-    ? { privateKey: process.env.SIGNING_PRIVATE_KEY, publicKey: process.env.SIGNING_PUBLIC_KEY }
-    : await generateKeyPair();
+  const { getSigningKeys } = await import('../src/lib/keys');
+  const keys = await getSigningKeys();
 
   const approvals = await prisma.approval.findMany({
     where: { versionId: version3.id },

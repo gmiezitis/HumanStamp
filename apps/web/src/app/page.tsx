@@ -76,15 +76,14 @@ export default function HomePage() {
                 <div className="mb-2 text-primary">
                   <FileCheck className="h-8 w-8" />
                 </div>
-                <CardTitle>See Exactly What Changed</CardTitle>
+                <CardTitle>See What Changed</CardTitle>
                 <CardDescription>
-                  Spot-second precision on differences between versions
+                  Visual comparison shows which seconds differ between versions
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Advanced fingerprinting shows changed time spans. Compare side-by-side and
-                  know exactly what was edited.
+                  Shows roughly which seconds of the picture changed between two versions (picture only; audio isn't compared).
                 </p>
               </CardContent>
             </Card>
