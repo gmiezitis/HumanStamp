@@ -25,10 +25,7 @@ export async function POST(request: NextRequest) {
     { expiresIn: '7d' }
   );
 
-  const response = NextResponse.json({ 
-    success: true, 
-    user: { id: demoUser.id, email: demoUser.email, name: demoUser.name } 
-  });
+  const response = NextResponse.redirect(new URL('/dashboard', request.url));
   
   response.cookies.set('humanstamp_session', token, {
     httpOnly: true,

@@ -2,21 +2,22 @@
 
 import { PrismaClient } from '@prisma/client';
 import { execSync } from 'child_process';
-import { writeFileSync, mkdirSync, readFileSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
 import { scanVideo, detectMismatch } from '../src/lib/video-scan';
 import { generateSegmentFingerprint } from '../src/lib/segment-fingerprint';
+import { sign, generateKeyPair } from '@human-stamp/core';
 
 const prisma = new PrismaClient();
 
-async function generateSampleVideo(filename: string, duration: number, text: string): Promise<Buffer> {
+async function generateSampleVideo(filename: string, duration: number, text: string, color: string = 'blue'): Promise<Buffer> {
   const tmpDir = '/tmp/humanstamp-seed';
   mkdirSync(tmpDir, { recursive: true });
   
   const outputPath = join(tmpDir, filename);
 
-  const ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=blue:s=1280x720:d=${duration} \
+  const ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=${color}:s=1280x720:d=${duration} \
     -vf "drawtext=text='${text}':fontsize=60:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2" \
     -c:v libx264 -preset ultrafast -pix_fmt yuv420p ${outputPath}`;
 
@@ -30,32 +31,64 @@ async function generateSampleVideo(filename: string, duration: number, text: str
 }
 
 async function main() {
-  console.log('Starting seed...');
+  console.log('Starting idempotent seed...');
+  console.log('NOTE: Seed is idempotent and safe to run multiple times\n');
 
-  console.log('Cleaning existing data...');
-  await prisma.eventLog.deleteMany({});
-  await prisma.receipt.deleteMany({});
-  await prisma.approval.deleteMany({});
-  await prisma.clientSignOff.deleteMany({});
-  await prisma.version.deleteMany({});
-  await prisma.project.deleteMany({});
-  await prisma.client.deleteMany({});
-  await prisma.workspaceMembership.deleteMany({});
-  await prisma.workspace.deleteMany({});
-  await prisma.user.deleteMany({});
-
-  console.log('Creating demo user...');
-  const user = await prisma.user.create({
-    data: {
-      email: 'demo@humanstamp.test',
-      name: 'Demo User',
-    },
+  let user = await prisma.user.findUnique({
+    where: { email: 'demo@humanstamp.test' },
   });
 
-  console.log('Creating workspace: Demo Agency...');
+  if (user) {
+    console.log('Demo user exists. Cleaning their data...');
+    
+    const workspaces = await prisma.workspace.findMany({
+      where: {
+        memberships: {
+          some: { userId: user.id },
+        },
+      },
+    });
+
+    for (const workspace of workspaces) {
+      await prisma.eventLog.deleteMany({ where: { workspaceId: workspace.id } });
+      
+      const clients = await prisma.client.findMany({ where: { workspaceId: workspace.id } });
+      for (const client of clients) {
+        const projects = await prisma.project.findMany({ where: { clientId: client.id } });
+        for (const project of projects) {
+          await prisma.receipt.deleteMany({ where: { version: { projectId: project.id } } });
+          await prisma.approval.deleteMany({ where: { version: { projectId: project.id } } });
+          await prisma.clientSignOff.deleteMany({ where: { projectId: project.id } });
+          await prisma.version.deleteMany({ where: { projectId: project.id } });
+        }
+        await prisma.project.deleteMany({ where: { clientId: client.id } });
+      }
+      await prisma.client.deleteMany({ where: { workspaceId: workspace.id } });
+      await prisma.workspaceMembership.deleteMany({ where: { workspaceId: workspace.id } });
+    }
+    await prisma.workspace.deleteMany({
+      where: {
+        memberships: {
+          some: { userId: user.id },
+        },
+      },
+    });
+
+    console.log('Existing demo data cleaned.');
+  } else {
+    console.log('Creating demo user...');
+    user = await prisma.user.create({
+      data: {
+        email: 'demo@humanstamp.test',
+        name: 'Demo User',
+      },
+    });
+  }
+
+  console.log('Creating workspace: Nordic Creative Agency...');
   const workspace = await prisma.workspace.create({
     data: {
-      name: 'Demo Agency',
+      name: 'Nordic Creative Agency',
       memberships: {
         create: {
           userId: user.id,
@@ -72,33 +105,33 @@ async function main() {
       entityType: 'workspace',
       entityId: workspace.id,
       actorId: user.id,
-      data: JSON.stringify({ name: 'Demo Agency' }),
+      data: JSON.stringify({ name: 'Nordic Creative Agency' }),
       previousHash: null,
       eventHash: createHash('sha256')
-        .update(JSON.stringify({ name: 'Demo Agency', timestamp: new Date() }))
+        .update(JSON.stringify({ name: 'Nordic Creative Agency', timestamp: new Date() }))
         .digest('hex'),
     },
   });
 
-  console.log('Creating client: Euronics-like Brand...');
+  console.log('Creating client: TechNordic AB...');
   const client = await prisma.client.create({
     data: {
       workspaceId: workspace.id,
-      name: 'Euronics-like Brand',
+      name: 'TechNordic AB',
     },
   });
 
-  console.log('Creating project: Autumn Campaign...');
+  console.log('Creating project: Winter Product Launch...');
   const project = await prisma.project.create({
     data: {
       clientId: client.id,
-      name: 'Autumn Campaign',
+      name: 'Winter Product Launch',
     },
   });
 
   console.log('Generating sample videos...');
   
-  const v1Buffer = await generateSampleVideo('v1.mp4', 5, 'Version 1 - Original');
+  const v1Buffer = await generateSampleVideo('demo-v1.mp4', 8, 'Version 1\\nOriginal Draft', 'darkblue');
   const v1Hash = createHash('sha256').update(v1Buffer).digest('hex');
 
   console.log('Creating version 1...');
@@ -108,20 +141,19 @@ async function main() {
       versionNumber: 1,
       sha256: v1Hash,
       storageKey: `demo/${project.id}/v1.mp4`,
-      filename: 'autumn-campaign-v1.mp4',
+      filename: 'winter-launch-v1.mp4',
       fileSize: v1Buffer.length,
-      duration: 5.0,
+      duration: 8.0,
       aiClaim: 'human',
       c2paPresent: false,
     },
   });
 
-  console.log('Processing version 1 (scanning and fingerprinting)...');
+  console.log('Processing version 1...');
   const [scanResult1, segmentFp1] = await Promise.all([
     scanVideo(v1Buffer),
     generateSegmentFingerprint(v1Buffer),
   ]);
-  const mismatch1 = detectMismatch(version1.aiClaim, scanResult1);
 
   await prisma.version.update({
     where: { id: version1.id },
@@ -134,11 +166,7 @@ async function main() {
     },
   });
 
-  if (mismatch1.hasMismatch) {
-    console.warn(`Mismatch detected for version 1: ${mismatch1.reason}`);
-  }
-
-  const v2Buffer = await generateSampleVideo('v2.mp4', 5, 'Version 2 - Edited');
+  const v2Buffer = await generateSampleVideo('demo-v2.mp4', 8, 'Version 2\\nWith Edits', 'navy');
   const v2Hash = createHash('sha256').update(v2Buffer).digest('hex');
 
   console.log('Creating version 2...');
@@ -148,20 +176,19 @@ async function main() {
       versionNumber: 2,
       sha256: v2Hash,
       storageKey: `demo/${project.id}/v2.mp4`,
-      filename: 'autumn-campaign-v2.mp4',
+      filename: 'winter-launch-v2.mp4',
       fileSize: v2Buffer.length,
-      duration: 5.0,
-      aiClaim: 'human',
+      duration: 8.0,
+      aiClaim: 'human-generated',
       c2paPresent: false,
     },
   });
 
-  console.log('Processing version 2 (scanning and fingerprinting)...');
+  console.log('Processing version 2...');
   const [scanResult2, segmentFp2] = await Promise.all([
     scanVideo(v2Buffer),
     generateSegmentFingerprint(v2Buffer),
   ]);
-  const mismatch2 = detectMismatch(version2.aiClaim, scanResult2);
 
   await prisma.version.update({
     where: { id: version2.id },
@@ -174,51 +201,175 @@ async function main() {
     },
   });
 
-  if (mismatch2.hasMismatch) {
-    console.warn(`Mismatch detected for version 2: ${mismatch2.reason}`);
-  }
-
   console.log('Creating approval for version 2...');
   await prisma.approval.create({
     data: {
       versionId: version2.id,
       userId: user.id,
-      approverName: 'Alice Johnson',
+      approverName: 'Lars Andersson',
       approverRole: 'Creative Director',
-      company: 'Demo Agency',
+      company: 'Nordic Creative Agency',
     },
   });
 
-  console.log('Creating client sign-off...');
+  const v3Buffer = await generateSampleVideo('demo-v3.mp4', 8, 'Version 3\\nFinal Cut', 'mediumblue');
+  const v3Hash = createHash('sha256').update(v3Buffer).digest('hex');
+
+  console.log('Creating version 3 (final)...');
+  const version3 = await prisma.version.create({
+    data: {
+      projectId: project.id,
+      versionNumber: 3,
+      sha256: v3Hash,
+      storageKey: `demo/${project.id}/v3.mp4`,
+      filename: 'winter-launch-v3-final.mp4',
+      fileSize: v3Buffer.length,
+      duration: 8.0,
+      aiClaim: 'human-generated',
+      c2paPresent: false,
+    },
+  });
+
+  console.log('Processing version 3...');
+  const [scanResult3, segmentFp3] = await Promise.all([
+    scanVideo(v3Buffer),
+    generateSegmentFingerprint(v3Buffer),
+  ]);
+
+  await prisma.version.update({
+    where: { id: version3.id },
+    data: {
+      c2paPresent: scanResult3.c2pa.found,
+      c2paData: scanResult3.c2pa.found ? JSON.stringify(scanResult3.c2pa) : null,
+      ffprobeData: JSON.stringify(scanResult3.ffprobe),
+      duration: scanResult3.ffprobe.duration || version3.duration,
+      fingerprint: JSON.stringify(segmentFp3),
+    },
+  });
+
+  console.log('Creating approvals for version 3...');
+  await prisma.approval.create({
+    data: {
+      versionId: version3.id,
+      userId: user.id,
+      approverName: 'Lars Andersson',
+      approverRole: 'Creative Director',
+      company: 'Nordic Creative Agency',
+    },
+  });
+
+  await prisma.approval.create({
+    data: {
+      versionId: version3.id,
+      userId: user.id,
+      approverName: 'Ingrid Svensson',
+      approverRole: 'Account Manager',
+      company: 'Nordic Creative Agency',
+    },
+  });
+
+  console.log('Creating client sign-off for version 3...');
   const signOff = await prisma.clientSignOff.create({
     data: {
       projectId: project.id,
-      versionId: version2.id,
-      token: 'demo-signoff-token-123',
-      email: 'client@euronics.test',
+      versionId: version3.id,
+      token: 'demo-signoff-v3-token',
+      email: 'client@technordic.example',
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
-  
-  console.log('Completing sign-off as client...');
-  await prisma.clientSignOff.update({
-    where: { id: signOff.id },
-    data: {
       usedAt: new Date(),
       decision: 'approved',
-      signerName: 'Emma Wilson',
-      comment: 'Looks great!',
+      signerName: 'Erik Johansson',
+      comment: 'Perfect! Ready to launch.',
     },
   });
 
-  console.log('\n✅ Seed complete!');
+  console.log('Creating pending sign-off for version 2...');
+  await prisma.clientSignOff.create({
+    data: {
+      projectId: project.id,
+      versionId: version2.id,
+      token: 'demo-signoff-v2-pending',
+      email: 'client@technordic.example',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  console.log('Generating receipt for version 3...');
+  const keys = process.env.SIGNING_PRIVATE_KEY && process.env.SIGNING_PUBLIC_KEY
+    ? { privateKey: process.env.SIGNING_PRIVATE_KEY, publicKey: process.env.SIGNING_PUBLIC_KEY }
+    : await generateKeyPair();
+
+  const approvals = await prisma.approval.findMany({
+    where: { versionId: version3.id },
+  });
+
+  const clientSignOffs = await prisma.clientSignOff.findMany({
+    where: { projectId: project.id, versionId: version3.id, usedAt: { not: null } },
+  });
+
+  const eventChain = await prisma.eventLog.findFirst({
+    where: { workspaceId: workspace.id },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const receiptPayload = {
+    payloadVersion: 1,
+    project: {
+      name: project.name,
+      client: {
+        name: client.name,
+      },
+    },
+    versionNumber: version3.versionNumber,
+    filename: version3.filename,
+    sha256: version3.sha256,
+    aiClaim: version3.aiClaim,
+    c2paPresent: version3.c2paPresent,
+    approvals: approvals.map(a => ({
+      approverName: a.approverName,
+      approverRole: a.approverRole,
+      company: a.company,
+      createdAt: a.createdAt.toISOString(),
+    })),
+    clientSignOffs: clientSignOffs.map(s => ({
+      email: s.email,
+      signerName: s.signerName,
+      decision: s.decision,
+      comment: s.comment,
+      createdAt: s.createdAt.toISOString(),
+    })),
+    aiLabel: null,
+    eventChainHead: eventChain?.eventHash || null,
+    createdAt: new Date().toISOString(),
+  };
+
+  const receiptData = JSON.stringify(receiptPayload);
+  const signature = await sign(receiptData, keys.privateKey);
+
+  const receipt = await prisma.receipt.create({
+    data: {
+      versionId: version3.id,
+      signature,
+      publicKey: keys.publicKey,
+      keyId: 'demo-key-1',
+      payloadVersion: 1,
+      receiptData,
+    },
+  });
+
+  console.log('\n✅ Seed complete! Demo data is ready.');
   console.log('\nDemo credentials:');
-  console.log('Email: demo@humanstamp.test');
-  console.log('\nWorkspace: Demo Agency');
-  console.log('Client: Euronics-like Brand');
-  console.log('Project: Autumn Campaign');
-  console.log('Versions: 2 (v1 original, v2 edited and approved)');
-  console.log('\nSign-off link: /signoff/demo-signoff-token-123');
+  console.log('  Email: demo@humanstamp.test');
+  console.log('\nDemo workspace:');
+  console.log('  Workspace: Nordic Creative Agency');
+  console.log('  Client: TechNordic AB');
+  console.log('  Project: Winter Product Launch');
+  console.log('  Versions: 3 (v1 draft, v2 edited, v3 final approved)');
+  console.log('\nDemo links:');
+  console.log(`  Receipt: /r/${receipt.id}`);
+  console.log('  Client sign-off (pending): /signoff/demo-signoff-v2-pending');
+  console.log('  Client sign-off (completed): /signoff/demo-signoff-v3-token');
+  console.log('\nRun again to reset demo data (idempotent).');
 }
 
 main()

@@ -1,109 +1,232 @@
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Shield, FileCheck, Users, CheckCircle2, Download, Eye, Zap } from 'lucide-react';
+
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-6xl mx-auto px-6 py-16">
-        <header className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-stone-900 mb-4">
-            Human Stamp
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Shield className="h-6 w-6" />
+            <span className="text-xl font-bold">Human Stamp</span>
+          </div>
+          <Link href="/verify">
+            <Button variant="ghost" size="sm">
+              <Eye className="mr-2 h-4 w-4" />
+              Verify Receipt
+            </Button>
+          </Link>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-6">
+        <section className="py-20 text-center">
+          <Badge className="mb-4" variant="secondary">
+            EU AI Act Compliance Ready
+          </Badge>
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6">
+            Approved, Provable AI Video
           </h1>
-          <p className="text-xl text-stone-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             When a client asks "who approved this?", you have the answer.
+            Signed approval records for agencies creating AI-enhanced video.
           </p>
-        </header>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <form action="/api/auth/demo-login" method="POST">
+              <Button size="lg" className="text-lg px-8">
+                <Zap className="mr-2 h-5 w-5" />
+                Try the Live Demo
+              </Button>
+            </form>
+            <Link href="/verify">
+              <Button variant="outline" size="lg" className="text-lg px-8">
+                <Eye className="mr-2 h-5 w-5" />
+                Verify a Receipt
+              </Button>
+            </Link>
+          </div>
+        </section>
 
-        <div className="grid md:grid-cols-2 gap-12 mb-16">
-          <div className="bg-white p-8 rounded-lg shadow-sm border border-stone-200">
-            <h2 className="text-2xl font-bold text-stone-900 mb-4">
-              For EU Agencies
-            </h2>
-            <p className="text-stone-700 mb-6">
-              Since 2 Aug 2026, EU AI Act Art. 50(4) requires deployers to disclose deepfakes. 
-              Brands' legal teams increasingly ask: <em>who approved this, and how was it made?</em>
-            </p>
-            <p className="text-stone-700">
-              Human Stamp keeps <strong>one signed record per video version</strong>: internal approvals, 
-              client sign-offs, AI usage disclosure, and whether the file changed afterwards.
+        <section className="py-16">
+          <h2 className="text-3xl font-bold text-center mb-12">Why Agencies Choose Human Stamp</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="mb-2 text-primary">
+                  <Shield className="h-8 w-8" />
+                </div>
+                <CardTitle>End Client Disputes</CardTitle>
+                <CardDescription>
+                  No more "we never approved that version" arguments
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Timestamped, signed approval chain with client sign-offs.
+                  Every version tracked, every approval recorded.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="mb-2 text-primary">
+                  <FileCheck className="h-8 w-8" />
+                </div>
+                <CardTitle>See Exactly What Changed</CardTitle>
+                <CardDescription>
+                  Spot-second precision on differences between versions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Advanced fingerprinting shows changed time spans. Compare side-by-side and
+                  know exactly what was edited.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="mb-2 text-primary">
+                  <Users className="h-8 w-8" />
+                </div>
+                <CardTitle>EU AI Act Labelling</CardTitle>
+                <CardDescription>
+                  Article 50 disclosure requirements handled
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Burn-in AI content labels, export signed receipts, and provide
+                  verifiable proof for legal teams.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section className="py-16">
+          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
+          <div className="max-w-3xl mx-auto space-y-8">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
+                1
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Upload & Compare Versions</h3>
+                <p className="text-muted-foreground">
+                  Upload video versions to your project. Compare any two versions to see
+                  exactly what changed, down to the second.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
+                2
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Internal Approval</h3>
+                <p className="text-muted-foreground">
+                  Team members approve versions with their role and company.
+                  All approvals are timestamped and signed.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
+                3
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Client Sign-off</h3>
+                <p className="text-muted-foreground">
+                  Send a secure link to your client. They sign off without needing an account.
+                  Decision recorded permanently.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
+                4
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Export Verifiable Receipt</h3>
+                <p className="text-muted-foreground">
+                  Generate a signed receipt with QR code. Download PDF + JSON evidence pack.
+                  Anyone can verify authenticity.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16">
+          <Card className="border-muted-foreground/20 bg-muted/30">
+            <CardHeader>
+              <CardTitle>Experience the Full Workflow in Seconds</CardTitle>
+              <CardDescription>
+                Click "Try the Live Demo" to see a pre-populated agency workspace with:
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Multiple video versions with comparisons</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Internal approvals and client sign-offs</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">AI label burned-in version</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Complete verifiable receipt</span>
+                </li>
+              </ul>
+              <div className="mt-6">
+                <form action="/api/auth/demo-login" method="POST">
+                  <Button size="lg" className="w-full sm:w-auto">
+                    <Zap className="mr-2 h-5 w-5" />
+                    Try the Live Demo Now
+                  </Button>
+                </form>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="py-16">
+          <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-2">
+              What This Record Provides
+            </h3>
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              A cryptographically signed record of claims and approvals—documenting who approved
+              what and when. This is not proof a video is authentic or true, nor does it
+              certify legal compliance. It creates an auditable approval trail for your agency.
             </p>
           </div>
+        </section>
+      </main>
 
-          <div className="bg-white p-8 rounded-lg shadow-sm border border-stone-200">
-            <h2 className="text-2xl font-bold text-stone-900 mb-4">
-              Evidence for Legal Teams
-            </h2>
-            <p className="text-stone-700 mb-4">
-              Export a complete audit trail as PDF and signed JSON:
-            </p>
-            <ul className="text-stone-700 space-y-2 list-disc list-inside">
-              <li>Project and version details</li>
-              <li>C2PA Content Credentials (if present)</li>
-              <li>Internal approvals with roles</li>
-              <li>Client sign-offs with decisions</li>
-              <li>Label application records</li>
-              <li>Hash-chained event log</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="bg-stone-900 text-white p-12 rounded-lg mb-16">
-          <h2 className="text-3xl font-bold mb-8 text-center">
-            How It Works
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div>
-              <div className="text-4xl mb-3">1</div>
-              <h3 className="text-xl font-semibold mb-2">Record</h3>
-              <p className="text-stone-300">
-                Upload versions, scan for C2PA credentials and AI signals. 
-                Acknowledge any mismatches between your claim and what the file says.
-              </p>
-            </div>
-            <div>
-              <div className="text-4xl mb-3">2</div>
-              <h3 className="text-xl font-semibold mb-2">Approve</h3>
-              <p className="text-stone-300">
-                Internal reviewers stamp versions with their role and company. 
-                Send sign-off links to clients—no account needed.
-              </p>
-            </div>
-            <div>
-              <div className="text-4xl mb-3">3</div>
-              <h3 className="text-xl font-semibold mb-2">Deliver</h3>
-              <p className="text-stone-300">
-                Generate a signed receipt with QR card. Export the complete record as 
-                PDF and JSON for the client's legal team.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-amber-50 border-2 border-amber-200 p-8 rounded-lg mb-16">
-          <h3 className="text-lg font-bold text-amber-900 mb-3">
-            What This Record Is
-          </h3>
-          <p className="text-amber-800">
-            <strong>A signed record of claims and approvals</strong>—not proof a video is true. 
-            It documents who approved what and when, and whether the file matches its record. 
-            It does not certify EU compliance, detect AI on its own, or survive TikTok/Instagram re-encoding 
-            (though fingerprinting helps recovery).
-          </p>
-        </div>
-
-        <div className="text-center">
-          <a
-            href="/verify"
-            className="inline-block bg-stone-900 text-white px-8 py-3 rounded-md text-lg font-semibold hover:bg-stone-800"
-          >
-            Verify a Video
-          </a>
-        </div>
-
-        <footer className="mt-16 pt-8 border-t border-stone-200 text-center text-stone-500 text-sm">
+      <footer className="border-t mt-20">
+        <div className="max-w-7xl mx-auto px-6 py-8 text-center text-sm text-muted-foreground">
           <p>
-            <strong>Legal Disclaimer:</strong> This record documents approvals and disclosures. 
+            <strong>Legal Disclaimer:</strong> This record documents approvals and disclosures.
             It is not legal advice or a certification of compliance.
           </p>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 }
