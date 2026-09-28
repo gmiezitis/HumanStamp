@@ -6,7 +6,8 @@ import { compareVersionFingerprints, type VideoFingerprint } from '@/lib/segment
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, AlertCircle, Shield, FileCheck, TrendingUp } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Shield, FileCheck } from 'lucide-react';
+import { CompareView } from '@/components/CompareView';
 
 export default async function CompareVersionsPage({ 
   params 
@@ -153,78 +154,12 @@ export default async function CompareVersionsPage({
           </Card>
         </div>
 
-        {comparisonData?.changedSpans && comparisonData.changedSpans.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Changed Time Spans
-              </CardTitle>
-              <CardDescription>
-                Segments that differ between the two versions
-              </CardDescription>
-              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground bg-muted px-3 py-2 rounded">
-                <AlertCircle className="h-3 w-3" />
-                <span>Visual changes only; audio differences are not detected</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="relative bg-muted rounded-lg p-4 mb-4">
-                <div className="relative h-12 bg-background rounded overflow-hidden">
-                  {comparisonData.changedSpans.map((span: any, i: number) => {
-                    const left = (span.start / duration) * 100;
-                    const width = ((span.end - span.start) / duration) * 100;
-                    return (
-                      <div
-                        key={i}
-                        className="absolute top-0 bottom-0 bg-red-500/70 hover:bg-red-500 transition-colors"
-                        style={{
-                          left: `${left}%`,
-                          width: `${width}%`,
-                        }}
-                        title={`${span.start.toFixed(1)}s - ${span.end.toFixed(1)}s`}
-                      />
-                    );
-                  })}
-                  <div className="absolute inset-0 flex items-center justify-between px-2 text-xs text-muted-foreground pointer-events-none">
-                    <span>0s</span>
-                    <span>{duration.toFixed(1)}s</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Click on timeline to jump to that moment (when implemented)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                {comparisonData.changedSpans.map((span: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="h-4 w-4 text-red-600" />
-                      <span className="text-sm font-medium">
-                        {span.start.toFixed(1)}s - {span.end.toFixed(1)}s
-                      </span>
-                    </div>
-                    <Badge variant="destructive" className="text-xs">
-                      {(span.end - span.start).toFixed(1)}s changed
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-
-              {comparisonData.overallSimilarity && (
-                <div className="mt-4 p-4 bg-muted rounded-lg">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Overall Similarity:</span>
-                    <span className="font-semibold">
-                      {(comparisonData.overallSimilarity * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <CompareView
+          version1={version1}
+          version2={version2}
+          comparisonData={comparisonData}
+          duration={duration}
+        />
 
         {comparisonData?.changedSpans && comparisonData.changedSpans.length === 0 && (
           <Card className="border-green-200 bg-green-50">
