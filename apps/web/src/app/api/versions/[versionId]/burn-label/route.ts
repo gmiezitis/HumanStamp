@@ -40,7 +40,7 @@ export async function POST(
     await requireWorkspaceAccess(session.userId, version.project.client.workspaceId);
 
     const body = await req.json();
-    const { labelText, corner, duration } = burnLabelSchema.parse(body);
+    const { labelText, corner, duration, deepfakeAssessment, deepfakeReason } = burnLabelSchema.parse(body);
 
     await enqueueBurnLabel({
       versionId,
@@ -48,6 +48,8 @@ export async function POST(
       labelText,
       corner,
       duration: duration || 0,
+      deepfakeAssessment,
+      deepfakeReason,
     });
 
     return NextResponse.json({ success: true, message: 'Label burn job queued' });

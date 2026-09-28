@@ -182,8 +182,8 @@ async function main() {
     },
   });
 
-  // V2: With highlight at 4.0-6.0s (this will show as changed)
-  const v2Buffer = await generateSampleVideo('demo-v2.mp4', 8, 'Version 2\\nAI Enhanced', 'navy', 4.0, 6.0);
+  // V2: Identical to v3 except for highlight timing (for clean compare demo)
+  const v2Buffer = await generateSampleVideo('demo-v2.mp4', 8, 'Version 2\\nAI Enhanced', 'navy', null, null);
   const v2Hash = createHash('sha256').update(v2Buffer).digest('hex');
 
   console.log('Creating version 2...');
