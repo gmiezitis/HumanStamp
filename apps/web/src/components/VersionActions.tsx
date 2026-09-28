@@ -14,8 +14,8 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
   const [signOffEmail, setSignOffEmail] = useState('');
   const [signOffUrl, setSignOffUrl] = useState<string | null>(null);
   const [showBurnLabelForm, setShowBurnLabelForm] = useState(false);
-  const [labelText, setLabelText] = useState('AI-generated content');
-  const [labelCorner, setLabelCorner] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+  const [labelText, setLabelText] = useState('AI-GENERATED');
+  const [labelCorner, setLabelCorner] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('top-left');
   const router = useRouter();
 
   const handleApprove = async (e: React.FormEvent) => {
