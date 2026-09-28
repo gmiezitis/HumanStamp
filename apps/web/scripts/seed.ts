@@ -8,17 +8,32 @@ import { createHash } from 'crypto';
 import { scanVideo, detectMismatch } from '../src/lib/video-scan';
 import { generateSegmentFingerprint } from '../src/lib/segment-fingerprint';
 import { sign, generateKeyPair } from '@human-stamp/core';
+import { burnLabel } from '../src/lib/label-burner';
 
 const prisma = new PrismaClient();
 
-async function generateSampleVideo(filename: string, duration: number, text: string, color: string = 'blue'): Promise<Buffer> {
+async function generateSampleVideo(
+  filename: string, 
+  duration: number, 
+  text: string, 
+  color: string = 'blue',
+  flashStart?: number,
+  flashEnd?: number
+): Promise<Buffer> {
   const tmpDir = '/tmp/humanstamp-seed';
   mkdirSync(tmpDir, { recursive: true });
   
   const outputPath = join(tmpDir, filename);
 
+  let videoFilter = `drawtext=text='${text}':fontsize=60:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2`;
+  
+  // Add white flash overlay for specific time spans to create detectable differences
+  if (flashStart !== undefined && flashEnd !== undefined) {
+    videoFilter += `,drawbox=x=0:y=0:w=iw:h=ih:color=white@0.5:t=fill:enable='between(t,${flashStart},${flashEnd})'`;
+  }
+
   const ffmpegCmd = `ffmpeg -y -f lavfi -i color=c=${color}:s=1280x720:d=${duration} \
-    -vf "drawtext=text='${text}':fontsize=60:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2" \
+    -vf "${videoFilter}" \
     -c:v libx264 -preset ultrafast -pix_fmt yuv420p ${outputPath}`;
 
   console.log(`Generating video: ${filename}`);
@@ -129,9 +144,10 @@ async function main() {
     },
   });
 
-  console.log('Generating sample videos...');
+  console.log('Generating sample videos with AI assistance...');
   
-  const v1Buffer = await generateSampleVideo('demo-v1.mp4', 8, 'Version 1\\nOriginal Draft', 'darkblue');
+  // V1: Original draft (no flash)
+  const v1Buffer = await generateSampleVideo('demo-v1.mp4', 8, 'Version 1\\nAI Draft', 'navy');
   const v1Hash = createHash('sha256').update(v1Buffer).digest('hex');
 
   console.log('Creating version 1...');
@@ -144,7 +160,7 @@ async function main() {
       filename: 'winter-launch-v1.mp4',
       fileSize: v1Buffer.length,
       duration: 8.0,
-      aiClaim: 'human',
+      aiClaim: 'ai-assisted',
       c2paPresent: false,
     },
   });
@@ -166,7 +182,8 @@ async function main() {
     },
   });
 
-  const v2Buffer = await generateSampleVideo('demo-v2.mp4', 8, 'Version 2\\nWith Edits', 'navy');
+  // V2: With highlight at 4.0-6.0s (this will show as changed)
+  const v2Buffer = await generateSampleVideo('demo-v2.mp4', 8, 'Version 2\\nAI Enhanced', 'navy', 4.0, 6.0);
   const v2Hash = createHash('sha256').update(v2Buffer).digest('hex');
 
   console.log('Creating version 2...');
@@ -179,7 +196,7 @@ async function main() {
       filename: 'winter-launch-v2.mp4',
       fileSize: v2Buffer.length,
       duration: 8.0,
-      aiClaim: 'human-generated',
+      aiClaim: 'ai-assisted',
       c2paPresent: false,
     },
   });
@@ -212,7 +229,8 @@ async function main() {
     },
   });
 
-  const v3Buffer = await generateSampleVideo('demo-v3.mp4', 8, 'Version 3\\nFinal Cut', 'mediumblue');
+  // V3: Modified highlight at 4.5-6.5s (different from V2, shows changed span)
+  const v3Buffer = await generateSampleVideo('demo-v3.mp4', 8, 'Version 3\\nAI Final', 'navy', 4.5, 6.5);
   const v3Hash = createHash('sha256').update(v3Buffer).digest('hex');
 
   console.log('Creating version 3 (final)...');
@@ -221,11 +239,11 @@ async function main() {
       projectId: project.id,
       versionNumber: 3,
       sha256: v3Hash,
-      storageKey: `demo/${project.id}/v3.mp4`,
+      storageKey: `demo/${project.id}/v3-final.mp4`,
       filename: 'winter-launch-v3-final.mp4',
       fileSize: v3Buffer.length,
       duration: 8.0,
-      aiClaim: 'human-generated',
+      aiClaim: 'ai-generated',
       c2paPresent: false,
     },
   });
