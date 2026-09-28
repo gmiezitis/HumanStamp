@@ -27,43 +27,26 @@ async function runSeedIfEmpty() {
   const prisma = new PrismaClient();
   
   try {
-    const userCount = await prisma.user.count();
+    const demoUser = await prisma.user.findUnique({
+      where: { email: 'demo@humanstamp.test' },
+    });
     
-    if (userCount === 0) {
-      console.log('Database is empty, running inline seed...');
+    if (!demoUser) {
+      console.log('Demo user not found, running full seed script...');
       
-      const { randomUUID } = require('crypto');
-      
-      const workspaceId = randomUUID();
-      const userId = randomUUID();
-      
-      await prisma.workspace.create({
-        data: {
-          id: workspaceId,
-          name: 'Demo Agency',
-        },
-      });
-      
-      await prisma.user.create({
-        data: {
-          id: userId,
-          email: 'demo@humanstamp.test',
-          name: 'Demo User',
-        },
-      });
-      
-      await prisma.workspaceMembership.create({
-        data: {
-          workspaceId,
-          userId,
-          role: 'ADMIN',
-        },
-      });
-      
-      console.log('Seed completed successfully');
-      console.log('Demo user: demo@humanstamp.test (use demo login button)');
+      try {
+        execSync('pnpm --filter @human-stamp/web seed', {
+          cwd: path.join(__dirname, '..', '..', '..'),
+          stdio: 'inherit',
+          env: { ...process.env }
+        });
+        console.log('Full seed completed successfully');
+      } catch (error) {
+        console.error('Seed script failed:', error);
+        throw error;
+      }
     } else {
-      console.log(`Database already has ${userCount} user(s), skipping seed`);
+      console.log('Demo user exists, skipping seed');
     }
   } catch (error) {
     console.error('Seed check/run failed:', error);
@@ -109,9 +92,9 @@ function startNextServer() {
   console.log('Starting Next.js server...');
   
   const port = process.env.PORT || 3000;
-  const nextBin = path.join(__dirname, '..', 'node_modules', '.bin', 'next');
+  const nextBin = require.resolve('next/dist/bin/next');
   
-  const server = spawn(nextBin, ['start', '-p', port], {
+  const server = spawn('node', [nextBin, 'start', '-p', port], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env },
     stdio: 'inherit',

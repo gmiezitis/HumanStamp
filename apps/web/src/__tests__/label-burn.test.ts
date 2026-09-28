@@ -103,4 +103,16 @@ describe('Label Burn', () => {
     expect(outputBuffer).toBeDefined();
     expect(outputBuffer.length).toBeGreaterThan(0);
   });
+
+  it('should handle special XML characters in label text', async () => {
+    const textWithSpecialChars = 'AI & ML <generated>';
+    
+    const outputBuffer = await burnLabel(testVideoBuffer, {
+      labelText: textWithSpecialChars,
+      corner: 'top-left',
+    });
+
+    expect(outputBuffer).toBeDefined();
+    expect(outputBuffer.length).toBeGreaterThan(0);
+  });
 });

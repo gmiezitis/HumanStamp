@@ -45,12 +45,13 @@ async function loadOrGeneratePersistentKeys(): Promise<{ privateKey: string; pub
  * Get signing keys for creating stamps.
  * Priority:
  * 1. SIGNING_PRIVATE_KEY and SIGNING_PUBLIC_KEY environment variables
- * 2. Persistent keys file (generated on first boot)
- * 3. In-memory ephemeral keys (for tests)
+ * 2. Persistent keys file (generated on first boot) - ONLY in development
+ * 3. In production (NODE_ENV=production), missing env keys cause a fatal error
  */
 export async function getSigningKeys(): Promise<SigningKeySet> {
   const envPrivateKey = process.env.SIGNING_PRIVATE_KEY;
   const envPublicKey = process.env.SIGNING_PUBLIC_KEY;
+  const isProduction = process.env.NODE_ENV === 'production';
 
   // If env keys are set, use them
   if (envPrivateKey && envPublicKey) {
@@ -61,16 +62,27 @@ export async function getSigningKeys(): Promise<SigningKeySet> {
     };
   }
 
-  // If keys are cached in memory, return them
+  // In production, env keys are REQUIRED
+  if (isProduction) {
+    console.error('❌ FATAL: Production requires SIGNING_PRIVATE_KEY and SIGNING_PUBLIC_KEY environment variables.');
+    console.error('   Receipts must stay valid across deploys. Generate a key pair and set these env vars:');
+    console.error('   SIGNING_PRIVATE_KEY=<your-ed25519-private-key>');
+    console.error('   SIGNING_PUBLIC_KEY=<your-ed25519-public-key>');
+    console.error('   Without fixed keys, old receipts will show as "Invalid" after deployment.');
+    throw new Error('Missing required SIGNING_PRIVATE_KEY and SIGNING_PUBLIC_KEY in production');
+  }
+
+  // Development: If keys are cached in memory, return them
   if (cachedPrivateKey && cachedPublicKey) {
     return {
       privateKey: cachedPrivateKey,
       publicKey: cachedPublicKey,
-      keyId: PROD_KEY_ID,
+      keyId: DEV_KEY_ID,
     };
   }
 
-  // Load or generate persistent keys
+  // Development: Load or generate persistent keys
+  console.log('⚠️  Development mode: using auto-generated keys (not for production)');
   const keys = await loadOrGeneratePersistentKeys();
   cachedPrivateKey = keys.privateKey;
   cachedPublicKey = keys.publicKey;
@@ -78,7 +90,7 @@ export async function getSigningKeys(): Promise<SigningKeySet> {
   return {
     privateKey: cachedPrivateKey,
     publicKey: cachedPublicKey,
-    keyId: PROD_KEY_ID,
+    keyId: DEV_KEY_ID,
   };
 }
 

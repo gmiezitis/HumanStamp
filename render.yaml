@@ -22,6 +22,14 @@ services:
         value: ${RENDER_EXTERNAL_URL}
       - key: JWT_SECRET
         generateValue: true
+      - key: SIGNING_PRIVATE_KEY
+        sync: false
+        # REQUIRED in production: Ed25519 private key for receipt signing
+        # Generate with: node -e "const sodium = require('libsodium-wrappers'); (async () => { await sodium.ready; const k = sodium.crypto_sign_keypair(); console.log('Private:', Buffer.from(k.privateKey).toString('base64')); console.log('Public:', Buffer.from(k.publicKey).toString('base64')); })()"
+        # Without this, receipts become invalid after deployment
+      - key: SIGNING_PUBLIC_KEY
+        sync: false
+        # REQUIRED in production: Ed25519 public key matching SIGNING_PRIVATE_KEY
       - key: RUN_WORKER_IN_PROCESS
         value: true
       - key: DEMO_LOGIN
@@ -30,8 +38,6 @@ services:
         value: local
       - key: STORAGE_LOCAL_PATH
         value: /data/storage
-      - key: SIGNING_KEYS_PATH
-        value: /data/signing-keys.json
       - key: NODE_ENV
         value: production
 

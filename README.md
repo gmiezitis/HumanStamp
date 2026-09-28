@@ -1,6 +1,6 @@
 # Human Stamp
 
-Seal short videos with human-approval receipts that survive platform metadata stripping.
+Agency approval and AI-label records for short videos. Verify-by-upload tries to re-match stripped copies.
 
 ## Architecture
 
@@ -119,9 +119,9 @@ console.log(keys);
 - Soft-bind: perceptual fingerprinting (dHash on ~8 frames)
 - Verify-by-upload: SHA-256 exact match or fingerprint recovery
 - Match type display: exact vs fingerprint with similarity score
-- Strip survival: works after platform re-encoding/metadata removal
+- Recovery: tolerant to re-encoding; crops and trims can prevent a match
 
-**Why dHash?** Difference hash computes horizontal gradient differences per frame, making it resilient to re-encoding, minor compression, and metadata stripping while remaining fast and deterministic.
+**Why dHash?** Difference hash computes horizontal gradient differences per frame, making it resilient to re-encoding and minor compression while remaining fast and deterministic. Position-aligned comparison means trims shift the match.
 
 **Future** (out of scope for Slice 1):
 - C2PA CA certificates

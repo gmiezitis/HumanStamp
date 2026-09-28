@@ -23,6 +23,15 @@ export interface BurnLabelOptions {
   durationSeconds?: number;
 }
 
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 function getPositionString(corner: LabelCorner): string {
   const padding = 20;
   switch (corner) {
@@ -44,11 +53,12 @@ async function createLabelImage(text: string, corner: LabelCorner): Promise<Buff
   const textHeight = fontSize + padding * 2;
 
   const bgColor = { r: 0, g: 0, b: 0, alpha: 0.7 };
+  const escapedText = escapeXml(text);
   
   const svg = `
     <svg width="${textWidth}" height="${textHeight}">
       <rect width="${textWidth}" height="${textHeight}" fill="rgb(${bgColor.r},${bgColor.g},${bgColor.b})" fill-opacity="${bgColor.alpha}"/>
-      <text x="${padding}" y="${fontSize + padding / 2}" font-family="Arial, sans-serif" font-size="${fontSize}" fill="white">${text}</text>
+      <text x="${padding}" y="${fontSize + padding / 2}" font-family="Arial, sans-serif" font-size="${fontSize}" fill="white">${escapedText}</text>
     </svg>
   `;
 

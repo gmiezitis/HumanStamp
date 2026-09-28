@@ -8,6 +8,8 @@ const burnLabelSchema = z.object({
   labelText: z.string().min(1),
   corner: z.enum(['top-left', 'top-right', 'bottom-left', 'bottom-right']),
   duration: z.number().optional(),
+  deepfakeAssessment: z.enum(['yes', 'no', 'unsure']).optional(),
+  deepfakeReason: z.string().optional(),
 });
 
 export async function POST(
@@ -38,7 +40,7 @@ export async function POST(
     await requireWorkspaceAccess(session.userId, version.project.client.workspaceId);
 
     const body = await req.json();
-    const { labelText, corner, duration } = burnLabelSchema.parse(body);
+    const { labelText, corner, duration, deepfakeAssessment, deepfakeReason } = burnLabelSchema.parse(body);
 
     await enqueueBurnLabel({
       versionId,
@@ -46,6 +48,8 @@ export async function POST(
       labelText,
       corner,
       duration: duration || 0,
+      deepfakeAssessment,
+      deepfakeReason,
     });
 
     return NextResponse.json({ success: true, message: 'Label burn job queued' });

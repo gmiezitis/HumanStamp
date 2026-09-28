@@ -14,8 +14,10 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
   const [signOffEmail, setSignOffEmail] = useState('');
   const [signOffUrl, setSignOffUrl] = useState<string | null>(null);
   const [showBurnLabelForm, setShowBurnLabelForm] = useState(false);
-  const [labelText, setLabelText] = useState('AI-generated content');
-  const [labelCorner, setLabelCorner] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+  const [labelText, setLabelText] = useState('AI-GENERATED');
+  const [labelCorner, setLabelCorner] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('top-left');
+  const [deepfakeAssessment, setDeepfakeAssessment] = useState<'yes' | 'no' | 'unsure'>('no');
+  const [deepfakeReason, setDeepfakeReason] = useState('');
   const router = useRouter();
 
   const handleApprove = async (e: React.FormEvent) => {
@@ -95,6 +97,8 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
         body: JSON.stringify({
           labelText,
           corner: labelCorner,
+          deepfakeAssessment,
+          deepfakeReason,
         }),
       });
 
@@ -314,6 +318,36 @@ export function VersionActions({ versionId, projectId }: { versionId: string; pr
               <option value="bottom-left">Bottom Left</option>
               <option value="bottom-right">Bottom Right</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-stone-700 mb-1">
+              Deepfake Assessment *
+            </label>
+            <select
+              value={deepfakeAssessment}
+              onChange={(e) => setDeepfakeAssessment(e.target.value as any)}
+              className="w-full px-3 py-2 text-sm border border-stone-300 rounded"
+              required
+            >
+              <option value="no">No - Not a deepfake</option>
+              <option value="yes">Yes - This is a deepfake</option>
+              <option value="unsure">Unsure</option>
+            </select>
+            <p className="text-xs text-stone-500 mt-1">
+              Your assessment of whether this content is a deepfake (manipulated realistic media)
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-stone-700 mb-1">
+              Reason for Assessment
+            </label>
+            <textarea
+              value={deepfakeReason}
+              onChange={(e) => setDeepfakeReason(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-stone-300 rounded"
+              placeholder="e.g. Synthetic presenter, lipsync AI applied, etc."
+              rows={2}
+            />
           </div>
           <div className="flex gap-2">
             <button
