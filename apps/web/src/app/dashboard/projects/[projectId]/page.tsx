@@ -21,7 +21,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
         orderBy: { versionNumber: 'desc' },
         include: {
           approvals: { include: { user: true } },
-          receipt: true,
+          receipts: true,
           _count: { select: { approvals: true } },
         },
       },
@@ -32,7 +32,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
   if (!project) redirect('/dashboard');
 
   const latestVersion = project.versions[0];
-  const hasReceipt = project.versions.some(v => v.receipt);
+  const hasReceipt = project.versions.some(v => v.receipts && v.receipts.length > 0);
   const pendingSignOff = project.clientSignOffs.find(s => !s.usedAt);
 
   return (
@@ -81,7 +81,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                     <p className="text-sm font-medium">View Receipt</p>
                     <p className="text-xs text-muted-foreground">Cryptographic proof</p>
                   </div>
-                  <Link href={`/r/${project.versions.find(v => v.receipt)?.receipt?.id}`}>
+                  <Link href={`/r/${project.versions.find(v => v.receipts && v.receipts.length > 0)?.receipts?.[0]?.id}`}>
                     <Button size="sm" variant="outline">View</Button>
                   </Link>
                 </div>

@@ -25,10 +25,10 @@ export default function HomePage() {
       <main className="max-w-7xl mx-auto px-6">
         <section className="py-20 text-center">
           <Badge className="mb-4" variant="secondary">
-            EU AI Act Compliance Ready
+            Built for AI-labelling workflows under the EU AI Act
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6">
-            Approved, Provable AI Video
+            AI video with a signed approval record
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             When a client asks "who approved this?", you have the answer.
@@ -51,7 +51,7 @@ export default function HomePage() {
         </section>
 
         <section className="py-16">
-          <h2 className="text-3xl font-bold text-center mb-12">Why Agencies Choose Human Stamp</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">What Human Stamp does for agencies</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
@@ -60,13 +60,13 @@ export default function HomePage() {
                 </div>
                 <CardTitle>End Client Disputes</CardTitle>
                 <CardDescription>
-                  No more "we never approved that version" arguments
+                  A clear record of which version was approved, by whom, and when
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Timestamped, signed approval chain with client sign-offs.
-                  Every version tracked, every approval recorded.
+                  Team approvals timestamped (server time) and included in the signed receipt.
+                  Client sign-offs without needing an account.
                 </p>
               </CardContent>
             </Card>
@@ -132,8 +132,8 @@ export default function HomePage() {
               <div>
                 <h3 className="text-xl font-semibold mb-2">Internal Approval</h3>
                 <p className="text-muted-foreground">
-                  Team members approve versions with their role and company.
-                  All approvals are timestamped and signed.
+                  Each approval is saved with the approver's account, role and server time, and added to a tamper-evident event log.
+                  The final receipt is digitally signed.
                 </p>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold mb-2">Client Sign-off</h3>
                 <p className="text-muted-foreground">
                   Send a secure link to your client. They sign off without needing an account.
-                  Decision recorded permanently.
+                  The client's decision, name and time are saved to the project record.
                 </p>
               </div>
             </div>
@@ -156,10 +156,10 @@ export default function HomePage() {
                 4
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2">Export Verifiable Receipt</h3>
+                <h3 className="text-xl font-semibold mb-2">Export Signed Receipt</h3>
                 <p className="text-muted-foreground">
                   Generate a signed receipt with QR code. Download PDF + JSON evidence pack.
-                  Anyone can verify authenticity.
+                  Anyone with the link can check that the record hasn't been changed since it was signed.
                 </p>
               </div>
             </div>

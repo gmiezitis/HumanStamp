@@ -16,13 +16,13 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 'compare',
     title: 'See What Changed',
-    description: 'Compare any two versions to see exactly which time spans were edited. Advanced fingerprinting highlights changed segments.',
+    description: 'Compare any two versions to see which seconds of the picture changed. Visual changes only; audio isn\'t compared.',
     icon: <CheckCircle className="h-5 w-5 text-blue-600" />,
   },
   {
     id: 'approve',
     title: 'Internal Approval',
-    description: 'Team members approve versions with their role. All approvals are timestamped and cryptographically signed.',
+    description: 'Each approval is saved with the approver's account, role and server time, and added to a tamper-evident event log. The final receipt is digitally signed.',
     icon: <CheckCircle className="h-5 w-5 text-green-600" />,
   },
   {
@@ -33,8 +33,8 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'receipt',
-    title: 'Export Verifiable Receipt',
-    description: 'Generate a signed receipt with QR code. Download as PDF + JSON evidence pack. Anyone can verify authenticity.',
+    title: 'Export Signed Receipt',
+    description: 'Generate a signed receipt with QR code. Download as PDF + JSON evidence pack. Anyone with the link can check that the record hasn't been changed since it was signed.',
     icon: <CheckCircle className="h-5 w-5 text-amber-600" />,
   },
 ];
