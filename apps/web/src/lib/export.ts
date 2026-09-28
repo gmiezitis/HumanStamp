@@ -194,12 +194,12 @@ export async function exportReceipt(receiptId: string): Promise<ExportData> {
   if (payload.aiLabel) {
     doc.font('Helvetica')
       .fontSize(9)
-      .text(`Label Text: ${payload.aiLabel.text}`, leftMargin + boxPadding, boxY + boxPadding + 18);
+      .text(`Label Text: ${payload.aiLabel.labelText}`, leftMargin + boxPadding, boxY + boxPadding + 18);
     doc.text(`Position: ${payload.aiLabel.corner}`, leftMargin + boxPadding, boxY + boxPadding + 33);
     doc.text(`Applied: ${new Date(payload.aiLabel.appliedAt).toLocaleString()}`, leftMargin + boxPadding, boxY + boxPadding + 48);
     doc.fontSize(7)
       .fillColor('#71717a')
-      .text(`Labeled File SHA-256: ${payload.aiLabel.labeledSha256}`, leftMargin + boxPadding, boxY + boxPadding + 63, {
+      .text(`Labeled File SHA-256: ${payload.aiLabel.labeledFileSha256}`, leftMargin + boxPadding, boxY + boxPadding + 63, {
         width: contentWidth - (boxPadding * 2),
       });
     doc.fillColor('#09090b');

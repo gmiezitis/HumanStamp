@@ -140,8 +140,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
               <div className="space-y-4">
                 {project.versions.map((version, idx) => {
                   const hasApprovals = version._count.approvals > 0;
-                  const hasSignOff = project.clientSignOffs.some(s => s.versionId === version.id && s.usedAt);
-                  const pendingVersionSignOff = project.clientSignOffs.find(s => s.versionId === version.id && !s.usedAt);
+                  const hasSignOff = clientSignOffs.some(s => s.versionId === version.id && s.usedAt);
+                  const pendingVersionSignOff = clientSignOffs.find(s => s.versionId === version.id && !s.usedAt);
                   const hasLabel = false; // Labeled video fields not in schema yet
 
                   return (
