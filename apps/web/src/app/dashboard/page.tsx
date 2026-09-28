@@ -57,6 +57,15 @@ async function getDashboardMetrics(userId: string) {
     projectName: string;
     clientName: string;
   }> = [];
+  const awaitingSignOffs: Array<{
+    token: string;
+    email: string;
+    versionNumber: number;
+    projectName: string;
+    clientName: string;
+    projectId: string;
+    expiresAt: Date;
+  }> = [];
 
   for (const workspace of workspaces) {
     for (const client of workspace.clients) {
@@ -103,6 +112,18 @@ async function getDashboardMetrics(userId: string) {
             });
           } else if (signOff.expiresAt > new Date()) {
             pendingSignOffs++;
+            const version = project.versions.find(v => v.id === signOff.versionId);
+            if (version) {
+              awaitingSignOffs.push({
+                token: signOff.token,
+                email: signOff.email,
+                versionNumber: version.versionNumber,
+                projectName: project.name,
+                clientName: client.name,
+                projectId: project.id,
+                expiresAt: signOff.expiresAt,
+              });
+            }
           }
         }
       }
@@ -118,6 +139,7 @@ async function getDashboardMetrics(userId: string) {
     completedSignOffs,
     receiptsReady,
     recentActivity: recentActivity.slice(0, 10),
+    awaitingSignOffs: awaitingSignOffs.slice(0, 5),
   };
 }
 
@@ -225,6 +247,44 @@ export default async function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Awaiting Sign-offs */}
+            {metrics.awaitingSignOffs.length > 0 && (
+              <Card className="border-amber-200 bg-amber-50/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-amber-600" />
+                    Awaiting Client Sign-off
+                  </CardTitle>
+                  <CardDescription>
+                    These versions need client review and approval
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {metrics.awaitingSignOffs.map((signOff, i) => (
+                      <Link
+                        key={i}
+                        href={`/signoff/${signOff.token}`}
+                        className="flex items-center gap-3 p-3 bg-white border rounded-lg hover:border-amber-400 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            {signOff.clientName} · {signOff.projectName} v{signOff.versionNumber}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Sent to {signOff.email} · Expires {signOff.expiresAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="border-amber-600 text-amber-700">
+                          Review Now
+                        </Badge>
+                      </Link>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
