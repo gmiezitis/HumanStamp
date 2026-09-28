@@ -229,8 +229,8 @@ async function main() {
     },
   });
 
-  // V3: Modified highlight at 4.5-6.5s (different from V2, shows changed span)
-  const v3Buffer = await generateSampleVideo('demo-v3.mp4', 8, 'Version 3\\nAI Final', 'navy', 4.5, 6.5);
+  // V3: Same as v2 but with highlight at 4.0-6.0s (single changed span for demo)
+  const v3Buffer = await generateSampleVideo('demo-v3.mp4', 8, 'Version 3\\nAI Final', 'navy', 4.0, 6.0);
   const v3Hash = createHash('sha256').update(v3Buffer).digest('hex');
 
   console.log('Creating version 3 (final)...');
