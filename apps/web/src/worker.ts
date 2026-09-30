@@ -5,7 +5,13 @@ import { prisma } from './lib/prisma';
 import { getStorage } from './lib/storage';
 import { scanVideo, detectMismatch } from './lib/video-scan';
 import { generateSegmentFingerprint } from './lib/segment-fingerprint';
-import type { ProcessVideoJob, GenerateFingerprintJob, BurnLabelJob } from './lib/queue';
+import type {
+  ProcessVideoJob,
+  GenerateFingerprintJob,
+  BurnLabelJob,
+} from './lib/queue';
+import { lockProject, requireCurrentVersion } from './lib/workflow';
+import { startEmailOutboxWorker } from './lib/email-outbox';
 
 async function processVideo(job: ProcessVideoJob): Promise<void> {
   console.log(`Processing video for version ${job.versionId}`);
@@ -40,7 +46,9 @@ async function processVideo(job: ProcessVideoJob): Promise<void> {
   });
 
   if (mismatch.hasMismatch) {
-    console.warn(`Mismatch detected for version ${job.versionId}: ${mismatch.reason}`);
+    console.warn(
+      `Mismatch detected for version ${job.versionId}: ${mismatch.reason}`
+    );
   }
 
   console.log(`Video processing complete for version ${job.versionId}`);
@@ -59,9 +67,9 @@ async function generateFingerprint(job: GenerateFingerprintJob): Promise<void> {
 
   const storage = getStorage();
   const buffer = await storage.get(version.storageKey);
-  
+
   const segmentFp = await generateSegmentFingerprint(buffer);
-  
+
   await prisma.version.update({
     where: { id: version.id },
     data: {
@@ -72,7 +80,7 @@ async function generateFingerprint(job: GenerateFingerprintJob): Promise<void> {
   console.log(`Fingerprint generation complete for version ${job.versionId}`);
 }
 
-async function burnLabel(job: BurnLabelJob): Promise<void> {
+export async function burnLabel(job: BurnLabelJob): Promise<void> {
   console.log(`Burning label for version ${job.versionId}`);
 
   const version = await prisma.version.findUnique({
@@ -99,13 +107,6 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
   const { createHash } = await import('crypto');
   const sha256 = createHash('sha256').update(outputBuffer).digest('hex');
 
-  const lastVersion = await prisma.version.findFirst({
-    where: { projectId: version.projectId },
-    orderBy: { versionNumber: 'desc' },
-  });
-
-  const newVersionNumber = (lastVersion?.versionNumber || 0) + 1;
-
   const { generateStorageKey } = await import('./lib/storage');
   const storageKey = generateStorageKey(
     job.workspaceId,
@@ -115,33 +116,60 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
 
   await storage.put(storageKey, outputBuffer, 'video/mp4');
 
-  const newVersion = await prisma.version.create({
-    data: {
-      projectId: version.projectId,
-      versionNumber: newVersionNumber,
-      sha256,
-      storageKey,
-      filename: `${version.filename.replace(/\.mp4$/, '')}-labeled.mp4`,
-      fileSize: outputBuffer.length,
-      aiClaim: version.aiClaim,
-      c2paPresent: false,
-    },
-  });
+  const newVersion = await prisma.$transaction(async (tx) => {
+    await lockProject(tx, version.projectId);
+    await requireCurrentVersion(tx, version.id, version.projectId);
+    const created = await tx.version.create({
+      data: {
+        projectId: version.projectId,
+        versionNumber: version.versionNumber + 1,
+        sha256,
+        storageKey,
+        filename: `${version.filename.replace(/\.mp4$/, '')}-labeled.mp4`,
+        fileSize: outputBuffer.length,
+        aiClaim: version.aiClaim,
+        c2paPresent: false,
+      },
+    });
 
-  const { appendEvent } = await import('./lib/event-log');
-  await appendEvent(
-    job.workspaceId,
-    'label.applied',
-    'version',
-    job.versionId,
-    { 
-      labelText: job.labelText, 
-      corner: job.corner, 
-      originalVersionId: job.versionId,
-      labeledVersionId: newVersion.id,
-      appliedAt: new Date().toISOString(),
-    }
-  );
+    await tx.clientSignOff.updateMany({
+      where: { projectId: version.projectId, usedAt: null, cancelledAt: null },
+      data: { cancelledAt: new Date() },
+    });
+    const { appendEvent } = await import('./lib/event-log');
+    await appendEvent(
+      job.workspaceId,
+      'label.applied',
+      'version',
+      job.versionId,
+      {
+        labelText: job.labelText,
+        corner: job.corner,
+        originalVersionId: job.versionId,
+        labeledVersionId: created.id,
+        appliedAt: new Date().toISOString(),
+      },
+      undefined,
+      tx
+    );
+    // Keep the label's provenance on the new file too, without copying approvals.
+    await appendEvent(
+      job.workspaceId,
+      'label.applied',
+      'version',
+      created.id,
+      {
+        labelText: job.labelText,
+        corner: job.corner,
+        originalVersionId: version.id,
+        labeledVersionId: created.id,
+        appliedAt: new Date().toISOString(),
+      },
+      undefined,
+      tx
+    );
+    return created;
+  });
 
   // Queue fingerprint generation for the labeled version
   const { enqueueProcessVideo } = await import('./lib/queue');
@@ -150,13 +178,16 @@ async function burnLabel(job: BurnLabelJob): Promise<void> {
     workspaceId: job.workspaceId,
   });
 
-  console.log(`Label burn complete for version ${job.versionId}, created version ${newVersion.id}`);
+  console.log(
+    `Label burn complete for version ${job.versionId}, created version ${newVersion.id}`
+  );
 }
 
 export async function startWorker() {
   console.log('Starting worker...');
 
   const queue = await getQueue();
+  const stopEmailWorker = startEmailOutboxWorker();
 
   await queue.work<ProcessVideoJob>('process-video', async (job) => {
     try {
@@ -167,14 +198,17 @@ export async function startWorker() {
     }
   });
 
-  await queue.work<GenerateFingerprintJob>('generate-fingerprint', async (job) => {
-    try {
-      await generateFingerprint(job.data);
-    } catch (error) {
-      console.error('Error generating fingerprint:', error);
-      throw error;
+  await queue.work<GenerateFingerprintJob>(
+    'generate-fingerprint',
+    async (job) => {
+      try {
+        await generateFingerprint(job.data);
+      } catch (error) {
+        console.error('Error generating fingerprint:', error);
+        throw error;
+      }
     }
-  });
+  );
 
   await queue.work<BurnLabelJob>('burn-label', async (job) => {
     try {
@@ -185,10 +219,13 @@ export async function startWorker() {
     }
   });
 
-  console.log('Worker ready and listening for jobs: process-video, generate-fingerprint, burn-label');
+  console.log(
+    'Worker ready and listening for jobs: process-video, generate-fingerprint, burn-label'
+  );
 
   process.on('SIGTERM', async () => {
     console.log('Received SIGTERM, shutting down...');
+    stopEmailWorker();
     await queue.stop();
     await prisma.$disconnect();
     process.exit(0);
@@ -196,6 +233,7 @@ export async function startWorker() {
 
   process.on('SIGINT', async () => {
     console.log('Received SIGINT, shutting down...');
+    stopEmailWorker();
     await queue.stop();
     await prisma.$disconnect();
     process.exit(0);

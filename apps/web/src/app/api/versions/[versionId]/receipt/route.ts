@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSession, requireWorkspaceAccess } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { generateReceipt } from '@/lib/receipt';
+import { apiError } from '@/lib/api-error';
 
 export async function POST(
   req: NextRequest,
@@ -28,19 +29,15 @@ export async function POST(
       return NextResponse.json({ error: 'Version not found' }, { status: 404 });
     }
 
-    await requireWorkspaceAccess(session.userId, version.project.client.workspaceId);
+    await requireWorkspaceAccess(
+      session.userId,
+      version.project.client.workspaceId
+    );
 
     const receiptId = await generateReceipt(versionId);
 
     return NextResponse.json({ receiptId, url: `/r/${receiptId}` });
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    if (error instanceof Error && error.message.includes('Forbidden')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    console.error('Generate receipt error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError(error);
   }
 }

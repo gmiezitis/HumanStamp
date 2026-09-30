@@ -1,7 +1,8 @@
 import { prisma } from './prisma';
 import { createHash } from 'crypto';
+import type { Prisma } from '@prisma/client';
 
-export type EventType = 
+export type EventType =
   | 'workspace.created'
   | 'client.created'
   | 'project.created'
@@ -9,6 +10,7 @@ export type EventType =
   | 'version.approved'
   | 'signoff.requested'
   | 'signoff.completed'
+  | 'signoff.reminded'
   | 'label.applied'
   | 'receipt.generated';
 
@@ -22,16 +24,34 @@ export async function appendEvent(
   entityType: string,
   entityId: string,
   data: EventData,
-  actorId?: string
+  actorId?: string,
+  transaction?: Prisma.TransactionClient
 ): Promise<void> {
-  const lastEvent = await prisma.eventLog.findFirst({
+  if (!transaction) {
+    return prisma.$transaction((tx) =>
+      appendEvent(
+        workspaceId,
+        eventType,
+        entityType,
+        entityId,
+        data,
+        actorId,
+        tx
+      )
+    );
+  }
+  const db = transaction;
+  await db.$queryRaw`SELECT "id" FROM "Workspace" WHERE "id" = ${workspaceId} FOR UPDATE`;
+  const lastEvent = await db.eventLog.findFirst({
     where: { workspaceId },
     orderBy: { createdAt: 'desc' },
   });
 
   const previousHash = lastEvent?.eventHash || null;
-  const timestamp = new Date();
-  
+  const timestamp = new Date(
+    Math.max(Date.now(), (lastEvent?.createdAt.getTime() || 0) + 1)
+  );
+
   const eventPayload = {
     eventType,
     entityType,
@@ -46,7 +66,7 @@ export async function appendEvent(
     .update(JSON.stringify(eventPayload))
     .digest('hex');
 
-  await prisma.eventLog.create({
+  await db.eventLog.create({
     data: {
       workspaceId,
       eventType,
@@ -61,7 +81,9 @@ export async function appendEvent(
   });
 }
 
-export async function verifyEventChain(workspaceId: string): Promise<{ valid: boolean; error?: string }> {
+export async function verifyEventChain(
+  workspaceId: string
+): Promise<{ valid: boolean; error?: string }> {
   const events = await prisma.eventLog.findMany({
     where: { workspaceId },
     orderBy: { createdAt: 'asc' },
@@ -116,8 +138,11 @@ export async function verifyEventChain(workspaceId: string): Promise<{ valid: bo
   return { valid: true };
 }
 
-export async function getEventChainHead(workspaceId: string): Promise<string | null> {
-  const lastEvent = await prisma.eventLog.findFirst({
+export async function getEventChainHead(
+  workspaceId: string,
+  transaction?: Prisma.TransactionClient
+): Promise<string | null> {
+  const lastEvent = await (transaction || prisma).eventLog.findFirst({
     where: { workspaceId },
     orderBy: { createdAt: 'desc' },
   });
@@ -128,13 +153,14 @@ export async function getEventChainHead(workspaceId: string): Promise<string | n
 export async function getEventLog(
   workspaceId: string,
   entityType?: string,
-  entityId?: string
+  entityId?: string,
+  transaction?: Prisma.TransactionClient
 ) {
   const where: any = { workspaceId };
   if (entityType) where.entityType = entityType;
   if (entityId) where.entityId = entityId;
 
-  return await prisma.eventLog.findMany({
+  return await (transaction || prisma).eventLog.findMany({
     where,
     orderBy: { createdAt: 'desc' },
   });

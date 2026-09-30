@@ -54,3 +54,9 @@ jobs:
 
       - name: Run typecheck, tests, lint, and build
         run: pnpm verify
+
+      - name: Install browser for approval smoke test
+        run: pnpm --filter @human-stamp/web exec playwright install --with-deps chromium
+
+      - name: Browser approval and local SMTP smoke test
+        run: pnpm --filter @human-stamp/web exec playwright test --config=playwright.approvals.config.ts

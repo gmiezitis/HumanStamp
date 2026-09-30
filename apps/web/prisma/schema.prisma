@@ -131,6 +131,7 @@ model Version {
   project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   approvals     Approval[]
   receipts      Receipt[]
+  signOffs      ClientSignOff[]
   
   @@unique([projectId, versionNumber])
   @@index([projectId])
@@ -167,14 +168,46 @@ model ClientSignOff {
   decision      String?
   signerName    String?
   comment       String?
+  requestedByEmail String?
+  cancelledAt   DateTime?
+  lastReminderAt DateTime?
   createdAt     DateTime  @default(now())
   
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  version Version? @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  emails EmailDelivery[]
   
   @@index([projectId])
+  @@index([versionId])
   @@index([token])
   @@index([expiresAt])
   @@index([createdAt])
+}
+
+// Durable transactional outbox. "accepted" means SMTP accepted the email,
+// not that it reached the recipient's inbox. Never expose body/token publicly.
+model EmailDelivery {
+  id String @id @default(cuid())
+  dedupeKey String @unique
+  signOffId String
+  kind String
+  recipient String
+  subject String
+  body String
+  status String @default("pending")
+  attempts Int @default(0)
+  retryAt DateTime @default(now())
+  lockedUntil DateTime?
+  leaseToken String?
+  lastError String?
+  acceptedAt DateTime?
+  providerMessageId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  signOff ClientSignOff @relation(fields: [signOffId], references: [id], onDelete: Cascade)
+
+  @@index([status, retryAt])
+  @@index([signOffId])
 }
 
 model Receipt {

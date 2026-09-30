@@ -3,6 +3,8 @@ import { requireSession, requireWorkspaceAccess } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { appendEvent } from '@/lib/event-log';
 import { z } from 'zod';
+import { lockProject, requireCurrentVersion } from '@/lib/workflow';
+import { apiError } from '@/lib/api-error';
 
 const approveSchema = z.object({
   approverName: z.string().optional(),
@@ -35,45 +37,44 @@ export async function POST(
       return NextResponse.json({ error: 'Version not found' }, { status: 404 });
     }
 
-    await requireWorkspaceAccess(session.userId, version.project.client.workspaceId);
+    await requireWorkspaceAccess(
+      session.userId,
+      version.project.client.workspaceId
+    );
 
     const body = await req.json();
     const { approverName, approverRole, company } = approveSchema.parse(body);
 
-    const approval = await prisma.approval.create({
-      data: {
-        versionId,
-        userId: session.userId,
-        approverName,
-        approverRole,
-        company,
-      },
-      include: {
-        user: true,
-      },
-    });
+    const approval = await prisma.$transaction(async (tx) => {
+      await lockProject(tx, version.projectId);
+      await requireCurrentVersion(tx, versionId, version.projectId);
+      const created = await tx.approval.create({
+        data: {
+          versionId,
+          userId: session.userId,
+          approverName,
+          approverRole,
+          company,
+        },
+        include: {
+          user: true,
+        },
+      });
 
-    await appendEvent(
-      version.project.client.workspaceId,
-      'version.approved',
-      'approval',
-      approval.id,
-      { versionId, approverRole, company },
-      session.userId
-    );
+      await appendEvent(
+        version.project.client.workspaceId,
+        'version.approved',
+        'approval',
+        created.id,
+        { versionId, approverRole, company },
+        session.userId,
+        tx
+      );
+      return created;
+    });
 
     return NextResponse.json({ approval });
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    if (error instanceof Error && error.message.includes('Forbidden')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
-    }
-    console.error('Approve version error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError(error);
   }
 }

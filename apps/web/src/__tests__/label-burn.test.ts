@@ -18,6 +18,7 @@ const getFfmpegPath = (): string => {
 };
 
 const getFfprobePath = (): string => {
+  if (process.env.FFPROBE_PATH) return process.env.FFPROBE_PATH;
   try {
     return require('ffprobe-static').path;
   } catch {

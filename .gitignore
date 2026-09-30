@@ -10,3 +10,5 @@ dist
 .DS_Store
 *.tsbuildinfo
 coverage
+test-results
+playwright-report
