@@ -5,6 +5,7 @@ import { appendEvent } from '@/lib/event-log';
 import { getStorage, generateStorageKey } from '@/lib/storage';
 import { enqueueProcessVideo } from '@/lib/queue';
 import { createHash } from 'crypto';
+import { lockProject } from '@/lib/workflow';
 
 export async function GET(
   req: NextRequest,
@@ -51,7 +52,10 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     console.error('Get versions error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -83,18 +87,14 @@ export async function POST(
     const aiClaim = formData.get('aiClaim') as string;
 
     if (!file || !aiClaim) {
-      return NextResponse.json({ error: 'File and aiClaim required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'File and aiClaim required' },
+        { status: 400 }
+      );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const sha256 = createHash('sha256').update(buffer).digest('hex');
-
-    const lastVersion = await prisma.version.findFirst({
-      where: { projectId },
-      orderBy: { versionNumber: 'desc' },
-    });
-
-    const versionNumber = (lastVersion?.versionNumber || 0) + 1;
 
     const storageKey = generateStorageKey(
       project.client.workspaceId,
@@ -105,26 +105,40 @@ export async function POST(
     const storage = getStorage();
     await storage.put(storageKey, buffer, file.type);
 
-    const version = await prisma.version.create({
-      data: {
-        projectId,
-        versionNumber,
-        sha256,
-        storageKey,
-        filename: file.name,
-        fileSize: buffer.length,
-        aiClaim,
-      },
-    });
+    const version = await prisma.$transaction(async (tx) => {
+      await lockProject(tx, projectId);
+      const lastVersion = await tx.version.findFirst({
+        where: { projectId },
+        orderBy: { versionNumber: 'desc' },
+      });
+      const versionNumber = (lastVersion?.versionNumber || 0) + 1;
+      const created = await tx.version.create({
+        data: {
+          projectId,
+          versionNumber,
+          sha256,
+          storageKey,
+          filename: file.name,
+          fileSize: buffer.length,
+          aiClaim,
+        },
+      });
 
-    await appendEvent(
-      project.client.workspaceId,
-      'version.uploaded',
-      'version',
-      version.id,
-      { versionNumber, filename: file.name, aiClaim },
-      session.userId
-    );
+      await tx.clientSignOff.updateMany({
+        where: { projectId, usedAt: null, cancelledAt: null },
+        data: { cancelledAt: new Date() },
+      });
+      await appendEvent(
+        project.client.workspaceId,
+        'version.uploaded',
+        'version',
+        created.id,
+        { versionNumber, filename: file.name, aiClaim },
+        session.userId,
+        tx
+      );
+      return created;
+    });
 
     await enqueueProcessVideo({
       versionId: version.id,
@@ -140,6 +154,9 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     console.error('Create version error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

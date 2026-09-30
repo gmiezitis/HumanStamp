@@ -1,13 +1,19 @@
 import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/session';
+import { getSession, requireWorkspaceAccess } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { UploadVersionForm } from '@/components/UploadVersionForm';
+import { getWorkflowStatus } from '@/lib/workflow';
+import { WorkflowBadge } from '@/components/WorkflowBadge';
 
-export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default async function ProjectPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
   const session = await getSession();
-  
+
   if (!session) redirect('/auth/signin');
 
   const project = await prisma.project.findUnique({
@@ -19,18 +25,23 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
         include: {
           approvals: { include: { user: true } },
           _count: { select: { approvals: true } },
+          signOffs: true,
         },
       },
     },
   });
 
   if (!project) redirect('/dashboard');
+  await requireWorkspaceAccess(session.userId, project.client.workspaceId);
 
   return (
     <div className="min-h-screen bg-stone-50">
       <header className="bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <Link href={`/dashboard/clients/${project.clientId}`} className="text-sm text-stone-600 hover:text-stone-900 mb-2 inline-block">
+          <Link
+            href={`/dashboard/clients/${project.clientId}`}
+            className="text-sm text-stone-600 hover:text-stone-900 mb-2 inline-block"
+          >
             ← Back to {project.client.name}
           </Link>
           <h1 className="text-xl font-bold text-stone-900">{project.name}</h1>
@@ -40,7 +51,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         <section>
-          <h2 className="text-2xl font-bold text-stone-900 mb-4">Upload Version</h2>
+          <h2 className="text-2xl font-bold text-stone-900 mb-4">
+            Upload Version
+          </h2>
           <UploadVersionForm projectId={projectId} />
         </section>
 
@@ -48,19 +61,32 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
           <h2 className="text-2xl font-bold text-stone-900 mb-4">Versions</h2>
           {project.versions.length === 0 ? (
             <div className="bg-white border border-stone-200 rounded-lg p-12 text-center">
-              <p className="text-stone-600">No versions yet. Upload the first version above.</p>
+              <p className="text-stone-600">
+                No versions yet. Upload the first version above.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
               {project.versions.map((version) => (
-                <div key={version.id} className="bg-white border border-stone-200 rounded-lg p-6">
+                <div
+                  key={version.id}
+                  className="bg-white border border-stone-200 rounded-lg p-6"
+                >
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="font-semibold text-stone-900">v{version.versionNumber}</h3>
-                      <p className="text-sm text-stone-600 font-mono">{version.filename}</p>
-                      <p className="text-xs text-stone-500 mt-1">{new Date(version.createdAt).toLocaleString()}</p>
+                      <h3 className="font-semibold text-stone-900">
+                        v{version.versionNumber}
+                      </h3>
+                      <p className="text-sm text-stone-600 font-mono">
+                        {version.filename}
+                      </p>
+                      <p className="text-xs text-stone-500 mt-1">
+                        {new Date(version.createdAt).toLocaleString()}
+                      </p>
                     </div>
-                    <span className="text-xs bg-stone-100 px-2 py-1 rounded">{version.aiClaim}</span>
+                    <span className="text-xs bg-stone-100 px-2 py-1 rounded">
+                      {version.aiClaim}
+                    </span>
                   </div>
 
                   {version.c2paPresent && (
@@ -68,6 +94,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                       ✓ C2PA credentials found
                     </div>
                   )}
+
+                  <div className="mb-3">
+                    <WorkflowBadge
+                      status={getWorkflowStatus({
+                        versionNumber: version.versionNumber,
+                        latestVersionNumber: project.versions[0].versionNumber,
+                        approvalCount: version.approvals.length,
+                        signOffs: version.signOffs,
+                      })}
+                    />
+                  </div>
 
                   {version.mismatchAcked && (
                     <div className="mb-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
@@ -78,11 +115,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                   {version._count.approvals > 0 && (
                     <div className="mb-3">
                       <p className="text-sm font-medium text-green-700 mb-1">
-                        ✓ {version._count.approvals} approval{version._count.approvals > 1 ? 's' : ''}
+                        {version._count.approvals} internal approval
+                        {version._count.approvals > 1 ? 's' : ''} on this file
                       </p>
                       {version.approvals.slice(0, 2).map((approval) => (
                         <p key={approval.id} className="text-xs text-stone-600">
-                          {approval.approverName && `${approval.approverName}, `}
+                          {approval.approverName &&
+                            `${approval.approverName}, `}
                           {approval.approverRole} at {approval.company}
                         </p>
                       ))}

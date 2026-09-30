@@ -2,6 +2,8 @@
 import { getReceipt } from '@/lib/receipt';
 import { notFound } from 'next/navigation';
 import { verify } from '@human-stamp/core';
+import { getWorkflowStatus } from '@/lib/workflow';
+import { WorkflowBadge } from '@/components/WorkflowBadge';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -16,6 +18,12 @@ export default async function ReceiptPage({ params }: PageProps) {
   }
 
   const payload = JSON.parse(receipt.receiptData);
+  const currentStatus = getWorkflowStatus({
+    versionNumber: receipt.version.versionNumber,
+    latestVersionNumber: receipt.version.project.versions[0].versionNumber,
+    approvalCount: receipt.version.approvals.length,
+    signOffs: receipt.version.signOffs,
+  });
   const isValid = await verify(
     receipt.receiptData,
     receipt.signature,
@@ -44,12 +52,24 @@ export default async function ReceiptPage({ params }: PageProps) {
               Record of Approval and Disclosure
             </h1>
             <div className="text-sm text-stone-600 space-y-1">
-              <p><strong>Project:</strong> {payload.project.name}</p>
-              <p><strong>Client:</strong> {payload.project.client.name}</p>
+              <p>
+                <strong>Project:</strong> {payload.project.name}
+              </p>
+              <p>
+                <strong>Client:</strong> {payload.project.client.name}
+              </p>
             </div>
           </div>
 
           <div className="space-y-6">
+            <div>
+              <WorkflowBadge status={currentStatus} />
+              <p className="text-sm text-stone-600 mt-2">
+                Current status of this file. The signed receipt preserves the
+                decisions recorded when it was issued; it does not approve later
+                versions.
+              </p>
+            </div>
             <div className="border-b border-stone-200 pb-4">
               <h2 className="text-lg font-semibold text-stone-800 mb-2">
                 Signature Verification
@@ -76,15 +96,21 @@ export default async function ReceiptPage({ params }: PageProps) {
               <div className="bg-stone-50 rounded p-4 space-y-2 font-mono text-sm">
                 <div className="flex justify-between">
                   <span className="text-stone-600">Version:</span>
-                  <span className="text-stone-900 font-semibold">v{payload.versionNumber}</span>
+                  <span className="text-stone-900 font-semibold">
+                    v{payload.versionNumber}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-600">Filename:</span>
-                  <span className="text-stone-900 text-xs">{payload.filename}</span>
+                  <span className="text-stone-900 text-xs">
+                    {payload.filename}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-600">AI Claim:</span>
-                  <span className="text-stone-900 font-semibold">{payload.aiClaim}</span>
+                  <span className="text-stone-900 font-semibold">
+                    {payload.aiClaim}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-600">C2PA Credentials:</span>
@@ -122,7 +148,8 @@ export default async function ReceiptPage({ params }: PageProps) {
                 {payload.clientSignOffs.map((signoff: any, i: number) => (
                   <div key={i} className="font-mono text-sm mb-2">
                     <div>
-                      {signoff.signerName} ({signoff.email}) — {signoff.decision}
+                      {signoff.signerName} ({signoff.email}) —{' '}
+                      {signoff.decision}
                     </div>
                     <div className="text-stone-500 text-xs">
                       {new Date(signoff.createdAt).toLocaleString()}
@@ -149,11 +176,15 @@ export default async function ReceiptPage({ params }: PageProps) {
                 <div className="bg-stone-50 rounded p-4 space-y-2 font-mono text-sm">
                   <div className="flex justify-between">
                     <span className="text-stone-600">Label Text:</span>
-                    <span className="text-stone-900">{payload.aiLabel.labelText}</span>
+                    <span className="text-stone-900">
+                      {payload.aiLabel.labelText}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-stone-600">Position:</span>
-                    <span className="text-stone-900">{payload.aiLabel.corner}</span>
+                    <span className="text-stone-900">
+                      {payload.aiLabel.corner}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-stone-600">Applied:</span>
@@ -162,7 +193,9 @@ export default async function ReceiptPage({ params }: PageProps) {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-stone-600">Labelled File SHA-256:</span>
+                    <span className="text-stone-600">
+                      Labelled File SHA-256:
+                    </span>
                     <span className="text-stone-900 text-xs break-all">
                       {payload.aiLabel.labeledFileSha256}
                     </span>
@@ -223,9 +256,10 @@ export default async function ReceiptPage({ params }: PageProps) {
                 Legal Disclaimer
               </h3>
               <p className="text-xs text-amber-800">
-                This record documents approvals and disclosures. It is not legal advice or a 
-                certification of compliance. The signature verifies the integrity of this record 
-                only&mdash;not the truth or authenticity of the media content.
+                This record documents approvals and disclosures. It is not legal
+                advice or a certification of compliance. The signature verifies
+                the integrity of this record only&mdash;not the truth or
+                authenticity of the media content.
               </p>
             </div>
           </div>

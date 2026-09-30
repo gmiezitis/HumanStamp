@@ -7,7 +7,7 @@ describe('Signature Verification', () => {
     const keys = await generateKeyPair();
     const data = 'test data';
 
-    const signature = await sign(Buffer.from(data), keys.privateKey);
+    const signature = await sign(data, keys.privateKey);
     const isValid = await verify(data, signature, keys.publicKey);
 
     expect(isValid).toBe(true);
@@ -18,7 +18,7 @@ describe('Signature Verification', () => {
     const data = 'test data';
     const tamperedData = 'tampered data';
 
-    const signature = await sign(Buffer.from(data), keys.privateKey);
+    const signature = await sign(data, keys.privateKey);
     const isValid = await verify(tamperedData, signature, keys.publicKey);
 
     expect(isValid).toBe(false);
@@ -29,7 +29,7 @@ describe('Signature Verification', () => {
     const keys2 = await generateKeyPair();
     const data = 'test data';
 
-    const signature = await sign(Buffer.from(data), keys1.privateKey);
+    const signature = await sign(data, keys1.privateKey);
     const isValid = await verify(data, signature, keys2.publicKey);
 
     expect(isValid).toBe(false);

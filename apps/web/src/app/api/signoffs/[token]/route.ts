@@ -1,53 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { appendEvent } from '@/lib/event-log';
+import { completeClientReview, getClientReview } from '@/lib/signoffs';
+import { apiError } from '@/lib/api-error';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { token } = await params;
-
-    const signOff = await prisma.clientSignOff.findUnique({
-      where: { token },
-      include: {
-        project: {
-          include: {
-            client: true,
-            versions: {
-              orderBy: { versionNumber: 'desc' },
-              take: 1,
-            },
+    const { review, superseded, expired, canSubmit } =
+      await getClientReview(token);
+    return NextResponse.json(
+      {
+        signOff: {
+          id: review.id,
+          email: review.email,
+          expiresAt: review.expiresAt,
+          usedAt: review.usedAt,
+          decision: review.decision,
+          signerName: review.signerName,
+          comment: review.comment,
+          superseded,
+          expired,
+          canSubmit,
+          cancelled: Boolean(review.cancelledAt),
+          notificationStatus: review.emails[0]?.status || null,
+          project: {
+            name: review.project.name,
+            client: { name: review.project.client.name },
+          },
+          version: {
+            id: review.version!.id,
+            versionNumber: review.version!.versionNumber,
+            filename: review.version!.filename,
+            sha256: review.version!.sha256,
           },
         },
       },
-    });
-
-    if (!signOff) {
-      return NextResponse.json({ error: 'Sign-off not found' }, { status: 404 });
-    }
-
-    if (signOff.expiresAt < new Date()) {
-      return NextResponse.json({ error: 'Sign-off link expired' }, { status: 410 });
-    }
-
-    if (signOff.usedAt) {
-      return NextResponse.json({ error: 'Sign-off already used' }, { status: 410 });
-    }
-
-    return NextResponse.json({ signOff });
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (error) {
-    console.error('Get sign-off error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError(error);
   }
 }
 
-const completeSignOffSchema = z.object({
+const schema = z.object({
   decision: z.enum(['approved', 'changes-requested']),
-  signerName: z.string().min(1),
-  comment: z.string().optional(),
+  signerName: z.string().trim().min(1).max(200),
+  comment: z.string().trim().max(5000).optional(),
 });
 
 export async function POST(
@@ -56,60 +59,20 @@ export async function POST(
 ) {
   try {
     const { token } = await params;
-
-    const signOff = await prisma.clientSignOff.findUnique({
-      where: { token },
-      include: {
-        project: {
-          include: {
-            client: {
-              include: { workspace: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!signOff) {
-      return NextResponse.json({ error: 'Sign-off not found' }, { status: 404 });
-    }
-
-    if (signOff.expiresAt < new Date()) {
-      return NextResponse.json({ error: 'Sign-off link expired' }, { status: 410 });
-    }
-
-    if (signOff.usedAt) {
-      return NextResponse.json({ error: 'Sign-off already used' }, { status: 410 });
-    }
-
-    const body = await req.json();
-    const { decision, signerName, comment } = completeSignOffSchema.parse(body);
-
-    const updated = await prisma.clientSignOff.update({
-      where: { id: signOff.id },
-      data: {
-        usedAt: new Date(),
-        decision,
-        signerName,
-        comment,
-      },
-    });
-
-    await appendEvent(
-      signOff.project.client.workspaceId,
-      'signoff.completed',
-      'signoff',
-      signOff.id,
-      { decision, signerName, email: signOff.email },
-      undefined
+    const result = await completeClientReview(
+      token,
+      schema.parse(await req.json())
     );
-
-    return NextResponse.json({ signOff: updated });
+    return NextResponse.json({
+      signOff: {
+        usedAt: result.signOff.usedAt,
+        decision: result.signOff.decision,
+        signerName: result.signOff.signerName,
+        comment: result.signOff.comment,
+      },
+      notificationQueued: result.notificationQueued,
+    });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
-    }
-    console.error('Complete sign-off error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError(error);
   }
 }
