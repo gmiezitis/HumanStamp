@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Human Stamp',
-  description: 'Seal videos with human-approval receipts',
+  title: 'HumanStamp — Ship the exact cut your client approved',
+  description:
+    'Client video approval and a signed final-file handoff record for agencies. Keep decisions, versions, and declared AI use together.',
 };
 
 export default function RootLayout({

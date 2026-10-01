@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .hs-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-3 rounded-lg px-5 py-3 text-sm font-semibold transition-colors disabled:opacity-50;
+  }
+  .hs-button-dark {
+    @apply bg-[#17251e] text-white hover:bg-[#2a4032];
+  }
+  .hs-button-outline {
+    @apply border border-[#c7d0c0] text-[#17251e] hover:bg-[#eaf0e3];
+  }
+  .hs-button-lime {
+    @apply bg-[#d9edaa] text-[#17251e] hover:bg-[#cce294];
+  }
+}
+
+:focus-visible {
+  outline: 3px solid #548143;
+  outline-offset: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

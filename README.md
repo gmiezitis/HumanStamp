@@ -1,6 +1,18 @@
 # Human Stamp
 
-Seal short videos with human-approval receipts that survive platform metadata stripping.
+Ship the exact cut your client approved. HumanStamp keeps final-file approval decisions and declared AI use together in a shareable, signed handoff record.
+
+## Agency first-value experience
+
+The public homepage includes an account-free, local-only interactive example: play the original sample video, approve it or request changes, inspect an unsigned example handoff, and simulate a replacement that needs fresh approval. The demo never submits real decisions or sends email. Its downloadable JSON is explicitly an unsigned example.
+
+Agency users can start at `/dashboard/start` to create an agency workspace, new client, and campaign in one form, then upload the delivery cut. AI use must be explicitly declared; it is not inferred by an AI detector. Authenticated agency previews and token-based client previews stream the exact bound file with byte-range seeking. Expired or cancelled incomplete review links cannot preview media; completed links may reopen the original file.
+
+Run the dedicated browser suite with `pnpm --filter @human-stamp/web exec playwright test --config=playwright.approvals.config.ts`. It covers the anonymous desktop/mobile example, actual first-project creation and upload, and the real review/notification/receipt workflow against local SMTP. The original demo clip and poster in `apps/web/public/demo` were generated for this project, with no third-party footage.
+
+These improvements demonstrate the workflow; they do not establish market demand or promise a measured time saving. Agency interviews and controlled pilots are still needed. See `APPROVAL_WORKFLOW.md` for email and release configuration.
+
+Exact-file hashing changes after platform re-encoding. A record documents approvals and claims, not legal compliance, media authenticity, or independently verified reviewer identity.
 
 ## Architecture
 
@@ -11,7 +23,7 @@ human-stamp/
 └── apps/web/          # Next.js API + verify page
 ```
 
-**Stack**: TypeScript monorepo (pnpm), Next.js App Router, Prisma + SQLite, Ed25519 signatures
+**Stack**: TypeScript monorepo (pnpm), Next.js App Router, Prisma + PostgreSQL, Ed25519 signatures
 
 **Dual-trust model**: Tool/stack claims (`tools[]`) are separate from human approval (`mode`, `approver`)
 

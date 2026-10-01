@@ -52,6 +52,9 @@ test('approve, signoff, and exact-version receipt workflow', async ({
   console.log('Step 4: Upload test video');
   const fileInput = page.locator('input[type="file"]');
   await fileInput.setInputFiles(v2Path);
+  await page
+    .getByLabel('How was AI used in this cut?', { exact: true })
+    .selectOption('human+ai');
 
   const uploadButton = page.locator('button:has-text("Upload Version")');
   await uploadButton.click();

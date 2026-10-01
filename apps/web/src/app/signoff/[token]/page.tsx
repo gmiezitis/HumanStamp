@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { VideoPreview } from '@/components/VideoPreview';
+import { aiClaimLabel } from '@/lib/ai-claim';
 
 interface Review {
   id: string;
@@ -22,6 +24,7 @@ interface Review {
     versionNumber: number;
     filename: string;
     sha256: string;
+    aiClaim: string;
   };
 }
 
@@ -120,10 +123,25 @@ export default function SignOffPage() {
               <p>Version: v{review.version.versionNumber}</p>
               <p className="break-all">Filename: {review.version.filename}</p>
               <p>Sent to: {review.email}</p>
-              <p className="font-mono text-xs break-all">
-                File identifier: {review.version.sha256}
+              <p>
+                Agency AI-use declaration:{' '}
+                {aiClaimLabel(review.version.aiClaim)}
               </p>
+              <details>
+                <summary className="cursor-pointer text-stone-600">
+                  File identifier
+                </summary>
+                <p className="font-mono text-xs break-all mt-2">
+                  {review.version.sha256}
+                </p>
+              </details>
             </section>
+            {(review.usedAt || (!review.expired && !review.cancelled)) && (
+              <VideoPreview
+                src={`/api/signoffs/${token}/media`}
+                filename={review.version.filename}
+              />
+            )}
             {(review.superseded || review.cancelled) && (
               <p
                 role="status"
