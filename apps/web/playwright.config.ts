@@ -2,7 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: 'approval-communications.spec.ts', // Uses its own local SMTP/server config.
+  testIgnore: [
+    'approval-communications.spec.ts',
+    'agency-value.spec.ts',
+    'agency-onboarding.spec.ts',
+  ], // Dedicated local SMTP/server config.
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

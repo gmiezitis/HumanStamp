@@ -37,6 +37,7 @@ export async function GET(
             versionNumber: review.version!.versionNumber,
             filename: review.version!.filename,
             sha256: review.version!.sha256,
+            aiClaim: review.version!.aiClaim,
           },
         },
       },

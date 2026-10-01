@@ -3,7 +3,11 @@ import { defineConfig, devices } from '@playwright/test';
 // Dedicated smoke suite: no global video-generation dependency, no external mail.
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'approval-communications.spec.ts',
+  testMatch: [
+    'approval-communications.spec.ts',
+    'agency-value.spec.ts',
+    'agency-onboarding.spec.ts',
+  ],
   workers: 1,
   timeout: 60_000,
   use: {

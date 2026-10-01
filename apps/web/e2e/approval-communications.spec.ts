@@ -1,14 +1,19 @@
 import { test, expect } from '@playwright/test';
 import { createServer, type Server } from 'net';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
+import { getStorage } from '../src/lib/storage';
 import { prisma } from '../src/lib/prisma';
 import { createSessionToken } from '../src/lib/session';
 import { processEmailOutbox } from '../src/lib/email-outbox';
+import { verify } from '@human-stamp/core';
 
 let smtp: Server;
 const captured: string[] = [];
 let workspaceId: string;
 let userId: string;
+const mediaKeys: string[] = [];
 
 test.beforeAll(async () => {
   process.env.SMTP_HOST = '127.0.0.1';
@@ -51,6 +56,7 @@ test.beforeAll(async () => {
   });
 });
 test.afterAll(async () => {
+  for (const key of mediaKeys) await getStorage().delete(key);
   if (workspaceId)
     await prisma.workspace.delete({ where: { id: workspaceId } });
   if (userId) await prisma.user.delete({ where: { id: userId } });
@@ -81,14 +87,20 @@ test('real browser: invite, SMTP acceptance, decision, receipt and replacement',
   });
   workspaceId = workspace.id;
   const projectId = workspace.clients[0].projects[0].id;
+  const sample = await readFile(
+    join(__dirname, '../public/demo/agency-cut.mp4')
+  );
+  const mediaKey = `${workspaceId}/${projectId}/original.mp4`;
+  await getStorage().put(mediaKey, sample, 'video/mp4');
+  mediaKeys.push(mediaKey);
   const version = await prisma.version.create({
     data: {
       projectId,
       versionNumber: 1,
       filename: 'campaign-v1.mp4',
-      sha256: 'smoke-original-file',
-      fileSize: 10,
-      storageKey: 'smoke-no-media',
+      sha256: createHash('sha256').update(sample).digest('hex'),
+      fileSize: sample.length,
+      storageKey: mediaKey,
       aiClaim: 'ai-assisted',
     },
   });
@@ -137,6 +149,30 @@ test('real browser: invite, SMTP acceptance, decision, receipt and replacement',
   });
   const clientPage = await clientContext.newPage();
   await clientPage.goto(`http://localhost:3100/signoff/${review.token}`);
+  const player = clientPage.getByLabel('Preview campaign-v1.mp4', {
+    exact: true,
+  });
+  await expect
+    .poll(() =>
+      player.evaluate((element) => (element as HTMLVideoElement).readyState)
+    )
+    .toBeGreaterThanOrEqual(1);
+  await player.evaluate((element) => (element as HTMLVideoElement).play());
+  await expect
+    .poll(() =>
+      player.evaluate((element) => (element as HTMLVideoElement).currentTime)
+    )
+    .toBeGreaterThan(0);
+  await player.evaluate((element) => {
+    const video = element as HTMLVideoElement;
+    video.pause();
+    video.currentTime = 3;
+  });
+  await expect
+    .poll(() =>
+      player.evaluate((element) => (element as HTMLVideoElement).currentTime)
+    )
+    .toBeGreaterThanOrEqual(3);
   await expect(
     clientPage.getByText('campaign-v1.mp4', { exact: false })
   ).toBeVisible();
@@ -177,16 +213,42 @@ test('real browser: invite, SMTP acceptance, decision, receipt and replacement',
     page.getByText('Valid signature', { exact: true })
   ).toBeVisible();
   const receiptUrl = page.url();
+  const receiptId = receiptUrl.split('/r/')[1];
+  const pdf = await page.request.get(
+    `/api/receipts/${receiptId}/export?format=pdf`
+  );
+  expect(pdf.status()).toBe(200);
+  expect(pdf.headers()['content-type']).toContain('application/pdf');
+  expect((await pdf.body()).subarray(0, 4).toString()).toBe('%PDF');
+  const json = await page.request.get(
+    `/api/receipts/${receiptId}/export?format=json`
+  );
+  expect(json.status()).toBe(200);
+  const exported = await json.json();
+  expect(exported.data.versionId).toBe(version.id);
+  expect(exported.data.sha256).toBe(
+    createHash('sha256').update(sample).digest('hex')
+  );
+  expect(
+    await verify(
+      JSON.stringify(exported.data),
+      exported.signature,
+      exported.publicKey
+    )
+  ).toBe(true);
 
   // A replacement is a separate file, not an inherited approval.
+  const replacementKey = `${workspaceId}/${projectId}/replacement.mp4`;
+  await getStorage().put(replacementKey, sample, 'video/mp4');
+  mediaKeys.push(replacementKey);
   const replacement = await prisma.version.create({
     data: {
       projectId,
       versionNumber: 2,
       filename: 'campaign-v2.mp4',
-      sha256: 'smoke-replacement-file',
-      fileSize: 10,
-      storageKey: 'smoke-new-media',
+      sha256: createHash('sha256').update(sample).digest('hex'),
+      fileSize: sample.length,
+      storageKey: replacementKey,
       aiClaim: 'ai-assisted',
     },
   });

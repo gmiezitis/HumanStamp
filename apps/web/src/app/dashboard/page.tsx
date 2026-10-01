@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default async function DashboardPage() {
   const session = await getSession();
-  
+
   if (!session) {
     redirect('/auth/signin');
   }
@@ -31,6 +31,23 @@ export default async function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+        <section className="rounded-2xl bg-[#17251e] text-white p-6 sm:p-8 mb-8 flex flex-col sm:flex-row gap-6 justify-between sm:items-center">
+          <div>
+            <h2 className="text-2xl font-semibold">
+              Make your next handoff clear.
+            </h2>
+            <p className="text-[#ccd6cf] mt-2 text-sm">
+              Start with a final cut, record the client decision, and share its
+              approval record.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/start"
+            className="hs-button hs-button-lime shrink-0"
+          >
+            Start a handoff →
+          </Link>
+        </section>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-stone-900">Workspaces</h2>
           <Link
@@ -59,10 +76,10 @@ export default async function DashboardPage() {
                 href={`/dashboard/workspaces/${workspace.id}`}
                 className="bg-white border border-stone-200 rounded-lg p-6 hover:border-stone-400 transition-colors"
               >
-                <h3 className="font-semibold text-stone-900 mb-2">{workspace.name}</h3>
-                <p className="text-sm text-stone-500">
-                  Role: {workspace.role}
-                </p>
+                <h3 className="font-semibold text-stone-900 mb-2">
+                  {workspace.name}
+                </h3>
+                <p className="text-sm text-stone-500">Role: {workspace.role}</p>
               </Link>
             ))}
           </div>

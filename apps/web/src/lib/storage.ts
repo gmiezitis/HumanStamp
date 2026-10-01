@@ -1,8 +1,16 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { promises as fs } from 'fs';
+import { createReadStream } from 'fs';
+import { Readable } from 'stream';
 import path from 'path';
-import { createHash } from 'crypto';
+import { randomUUID } from 'crypto';
 
 export interface StorageConfig {
   type: 'local' | 's3';
@@ -19,6 +27,12 @@ export interface StorageInterface {
   get(key: string): Promise<Buffer>;
   delete(key: string): Promise<void>;
   getSignedUrl(key: string, expiresIn?: number): Promise<string>;
+  size(key: string): Promise<number>;
+  stream(
+    key: string,
+    range?: { start: number; end: number },
+    signal?: AbortSignal
+  ): Promise<ReadableStream<Uint8Array>>;
 }
 
 class LocalStorage implements StorageInterface {
@@ -52,6 +66,28 @@ class LocalStorage implements StorageInterface {
   async getSignedUrl(key: string): Promise<string> {
     return `/api/storage/${key}`;
   }
+
+  private resolveKey(key: string) {
+    const root = path.resolve(this.basePath);
+    const target = path.resolve(root, key);
+    if (!target.startsWith(root + path.sep))
+      throw new Error('Invalid storage key');
+    return target;
+  }
+
+  async size(key: string) {
+    return (await fs.stat(this.resolveKey(key))).size;
+  }
+
+  async stream(
+    key: string,
+    range?: { start: number; end: number },
+    signal?: AbortSignal
+  ) {
+    return Readable.toWeb(
+      createReadStream(this.resolveKey(key), { ...range, signal })
+    ) as ReadableStream<Uint8Array>;
+  }
 }
 
 class S3Storage implements StorageInterface {
@@ -59,8 +95,15 @@ class S3Storage implements StorageInterface {
   private bucket: string;
 
   constructor(config: StorageConfig) {
-    if (!config.s3Bucket || !config.s3Region || !config.s3AccessKeyId || !config.s3SecretAccessKey) {
-      throw new Error('S3 storage requires bucket, region, accessKeyId, and secretAccessKey');
+    if (
+      !config.s3Bucket ||
+      !config.s3Region ||
+      !config.s3AccessKeyId ||
+      !config.s3SecretAccessKey
+    ) {
+      throw new Error(
+        'S3 storage requires bucket, region, accessKeyId, and secretAccessKey'
+      );
     }
 
     this.bucket = config.s3Bucket;
@@ -74,7 +117,11 @@ class S3Storage implements StorageInterface {
     });
   }
 
-  async put(key: string, buffer: Buffer, contentType = 'application/octet-stream'): Promise<void> {
+  async put(
+    key: string,
+    buffer: Buffer,
+    contentType = 'application/octet-stream'
+  ): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
@@ -120,6 +167,32 @@ class S3Storage implements StorageInterface {
     });
     return await getSignedUrl(this.client, command, { expiresIn });
   }
+
+  async size(key: string) {
+    const response = await this.client.send(
+      new HeadObjectCommand({ Bucket: this.bucket, Key: key })
+    );
+    if (response.ContentLength === undefined)
+      throw new Error('Missing file size');
+    return response.ContentLength;
+  }
+
+  async stream(
+    key: string,
+    range?: { start: number; end: number },
+    signal?: AbortSignal
+  ) {
+    const response = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ...(range ? { Range: `bytes=${range.start}-${range.end}` } : {}),
+      }),
+      { abortSignal: signal }
+    );
+    if (!response.Body) throw new Error('Missing file body');
+    return response.Body.transformToWebStream() as ReadableStream<Uint8Array>;
+  }
 }
 
 let storageInstance: StorageInterface | null = null;
@@ -149,9 +222,13 @@ export function getStorage(): StorageInterface {
   return storageInstance;
 }
 
-export function generateStorageKey(workspaceId: string, projectId: string, filename: string): string {
-  const timestamp = Date.now();
-  const hash = createHash('sha256').update(`${workspaceId}-${projectId}-${filename}-${timestamp}`).digest('hex').slice(0, 16);
+export function generateStorageKey(
+  workspaceId: string,
+  projectId: string,
+  filename: string
+): string {
+  // Two simultaneous uploads of the same filename must never overwrite a cut.
+  const hash = randomUUID();
   const ext = path.extname(filename);
   return `${workspaceId}/${projectId}/${hash}${ext}`;
 }

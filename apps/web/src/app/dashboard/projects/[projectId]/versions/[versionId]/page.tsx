@@ -6,6 +6,7 @@ import { VersionActions } from '@/components/VersionActions';
 import { getWorkflowStatus } from '@/lib/workflow';
 import { WorkflowBadge } from '@/components/WorkflowBadge';
 import { emailSummarySelect } from '@/lib/signoffs';
+import { VideoPreview } from '@/components/VideoPreview';
 
 export default async function VersionDetailPage({
   params,
@@ -81,6 +82,13 @@ export default async function VersionDetailPage({
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        <section className="bg-white border border-stone-200 rounded-lg p-6 max-w-4xl">
+          <h2 className="text-lg font-semibold mb-4">Review this cut</h2>
+          <VideoPreview
+            src={`/api/versions/${versionId}/media`}
+            filename={version.filename}
+          />
+        </section>
         {/* Version Info */}
         <section className="bg-white border border-stone-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-stone-900 mb-4">Details</h2>
